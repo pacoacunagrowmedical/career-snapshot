@@ -25,6 +25,7 @@ const DER = 16
 const ALTO_GRAF = 300
 const ARRIBA = 16
 const FILA = 30
+const CARRIL = 22 // alto de cada carril cuando hay empleos simultáneos
 const GAP = 4
 
 interface Props {
@@ -75,34 +76,53 @@ export function SnapshotChart({ a, moneda, sueldoEsperado, sueldoOfrecido }: Pro
   const { x, y } = g
   const base = ARRIBA + ALTO_GRAF
 
+  // Empleos simultáneos: cada uno va en su propio carril dentro de la fila para que no se encimen.
+  const carril = new Map<number, number>()
+  const finCarriles: number[] = []
+  for (const t of a.empleos) {
+    let l = finCarriles.findIndex((fin) => fin <= t.desde + 1) // un mes de cruce no cuenta (mismo criterio que el análisis)
+    if (l < 0) l = finCarriles.push(0) - 1
+    finCarriles[l] = t.hasta
+    carril.set(t.numero, l)
+  }
+  const nCarriles = Math.max(1, finCarriles.length)
+  const altoCarril = nCarriles === 1 ? FILA : CARRIL
+  const altoFilaEmpleo = nCarriles * altoCarril + (nCarriles - 1) * 2
+  const yCarril = (top: number, t: TramoEmpleo) => top + (carril.get(t.numero) ?? 0) * (altoCarril + 2)
+
   // Filas alineadas debajo de la gráfica.
-  const filas: { etiqueta: string; render: (top: number) => ReactNode }[] = [
+  const filas: { etiqueta: string; alto: number; render: (top: number) => ReactNode }[] = [
     {
       etiqueta: 'Empleo #',
+      alto: altoFilaEmpleo,
       render: (top) => a.empleos.map((t) => (
-        <text key={t.numero} x={(x(t.desde) + x(t.hasta)) / 2} y={top + FILA / 2 + 5} textAnchor="middle" fontSize={14} fontWeight={700} fill="var(--text)">{t.numero}</text>
+        <text key={t.numero} x={(x(t.desde) + x(t.hasta)) / 2} y={yCarril(top, t) + altoCarril / 2 + 5} textAnchor="middle" fontSize={nCarriles > 1 ? 12 : 14} fontWeight={700} fill="var(--text)">{t.numero}</text>
       )),
     },
     {
       etiqueta: 'Empleador',
-      render: (top) => a.empleos.map((t) => <Celda key={t.numero} t={t} top={top} x={x} fill={colorEmpleo(t.numero)} texto={t.empleo.empresa} tinta={tintaEmpleo(t.numero)} />),
+      alto: altoFilaEmpleo,
+      render: (top) => a.empleos.map((t) => <Celda key={t.numero} t={t} top={yCarril(top, t)} alto={altoCarril} x={x} fill={colorEmpleo(t.numero)} texto={t.empleo.empresa} tinta={tintaEmpleo(t.numero)} />),
     },
     {
       etiqueta: 'Razón de salida',
+      alto: altoFilaEmpleo,
       render: (top) => a.empleos.map((t) => {
         const r = razon(t.empleo.razonSalida)
-        return <Celda key={t.numero} t={t} top={top} x={x} fill={SEM[r.semaforo]} texto={r.corto} titulo={r.etiqueta} tinta={TEXTO_SEM[r.semaforo]} negrita />
+        return <Celda key={t.numero} t={t} top={yCarril(top, t)} alto={altoCarril} x={x} fill={SEM[r.semaforo]} texto={r.corto} titulo={r.etiqueta} tinta={TEXTO_SEM[r.semaforo]} negrita />
       }),
     },
     ...ASPECTOS_CALIFICACION.map((asp) => ({
       etiqueta: asp.etiqueta,
+      alto: altoFilaEmpleo,
       render: (top: number) => a.empleos.map((t) => {
         const c = calificacion(t.empleo.calificacion[asp.clave])
-        return <Celda key={t.numero} t={t} top={top} x={x} fill={SEM[c.semaforo]} texto={c.corto} titulo={`${c.etiqueta} (${c.valor})`} tinta={TEXTO_SEM[c.semaforo]} negrita />
+        return <Celda key={t.numero} t={t} top={yCarril(top, t)} alto={altoCarril} x={x} fill={SEM[c.semaforo]} texto={c.corto} titulo={`${c.etiqueta} (${c.valor})`} tinta={TEXTO_SEM[c.semaforo]} negrita />
       }),
     })),
     {
       etiqueta: 'Sin empleo',
+      alto: FILA,
       render: (top) => a.huecos.map((h, i) => {
         const w = x(h.hasta) - x(h.desde)
         return (
@@ -115,6 +135,7 @@ export function SnapshotChart({ a, moneda, sueldoEsperado, sueldoOfrecido }: Pro
     },
     {
       etiqueta: 'Freelance',
+      alto: FILA,
       render: (top) => a.freelance.map((f, i) => {
         const w = x(f.hasta) - x(f.desde)
         return (
@@ -128,7 +149,8 @@ export function SnapshotChart({ a, moneda, sueldoEsperado, sueldoOfrecido }: Pro
   ]
 
   const topFilas = base + 34
-  const altoTotal = topFilas + filas.length * (FILA + GAP) + 4
+  const topsFilas = filas.reduce<number[]>((acc, _f, i) => [...acc, i === 0 ? topFilas : acc[i - 1] + filas[i - 1].alto + GAP], [])
+  const altoTotal = topsFilas[filas.length - 1] + filas[filas.length - 1].alto + GAP + 4
 
   // Tooltip: empleo(s) bajo el cursor.
   const enCursor = hover ? a.empleos.filter((t) => hover.x >= t.desde && hover.x < t.hasta) : []
@@ -199,6 +221,13 @@ export function SnapshotChart({ a, moneda, sueldoEsperado, sueldoOfrecido }: Pro
               <path d={`M${x0},${base} L${x0},${y0} L${x1},${y1} L${x1},${base} Z`} fill={c} opacity={0.22} />
               <path d={`M${x0},${base} L${x0},${y0} L${x1},${y1} L${x1},${base}`} fill="none" stroke={c} strokeWidth={2} strokeLinejoin="round" />
               <circle cx={x1} cy={y1} r={4} fill={c} stroke="var(--surface)" strokeWidth={2} />
+              {/* Número del empleo dentro del área, para distinguir empleos simultáneos */}
+              {x1 - x0 > 22 && (
+                <g>
+                  <circle cx={x0 + 12} cy={y0 + 14} r={9} fill={c} />
+                  <text x={x0 + 12} y={y0 + 18} textAnchor="middle" fontSize={11} fontWeight={700} fill={tintaEmpleo(t.numero)}>{t.numero}</text>
+                </g>
+              )}
             </g>
           )
         })}
@@ -222,10 +251,10 @@ export function SnapshotChart({ a, moneda, sueldoEsperado, sueldoOfrecido }: Pro
 
         {/* Filas alineadas */}
         {filas.map((f, i) => {
-          const top = topFilas + i * (FILA + GAP)
+          const top = topsFilas[i]
           return (
             <g key={f.etiqueta}>
-              <text x={0} y={top + FILA / 2 + 4} fontSize={12} fill="var(--text-2)">{f.etiqueta}</text>
+              <text x={0} y={top + f.alto / 2 + 4} fontSize={12} fill="var(--text-2)">{f.etiqueta}</text>
               {i > 0 && <line x1={IZQ} x2={W - DER} y1={top - GAP / 2} y2={top - GAP / 2} stroke="var(--border)" strokeWidth={0.5} />}
               {f.render(top)}
             </g>
@@ -314,7 +343,7 @@ function LineaRef({ y, etiqueta, color, punteada, lado }: { y: number; etiqueta:
   )
 }
 
-function Celda(props: { t: TramoEmpleo; top: number; x: (m: number) => number; fill: string; texto: string; titulo?: string; tinta: string; negrita?: boolean }) {
+function Celda(props: { t: TramoEmpleo; top: number; alto: number; x: (m: number) => number; fill: string; texto: string; titulo?: string; tinta: string; negrita?: boolean }) {
   const x0 = props.x(props.t.desde) + 1
   const w = Math.max(2, props.x(props.t.hasta) - props.x(props.t.desde) - 2)
   // Celdas de estado (negrita): la palabra completa si cabe; si no, su inicial. El nombre completo va en el tooltip.
@@ -324,9 +353,9 @@ function Celda(props: { t: TramoEmpleo; top: number; x: (m: number) => number; f
   return (
     <g>
       <title>{props.titulo ?? props.texto}</title>
-      <rect x={x0} y={props.top} width={w} height={FILA} rx={4} fill={props.fill} />
+      <rect x={x0} y={props.top} width={w} height={props.alto} rx={4} fill={props.fill} />
       {texto && (
-        <text x={x0 + w / 2} y={props.top + FILA / 2 + 4} textAnchor="middle" fontSize={props.negrita ? 12.5 : 12} fontWeight={props.negrita ? 650 : 500} fill={props.tinta}>
+        <text x={x0 + w / 2} y={props.top + props.alto / 2 + 4} textAnchor="middle" fontSize={props.negrita ? 12.5 : 12} fontWeight={props.negrita ? 650 : 500} fill={props.tinta}>
           {texto}
         </text>
       )}
