@@ -8,8 +8,8 @@ export function AvisoPrivacidad() {
           Grow Medical es responsable del tratamiento de los datos personales que proporcionas en esta solicitud de empleo.
         </p>
         <p>
-          Usamos tus datos únicamente para evaluar tu candidatura, contactarte durante el proceso de selección y, si nos autorizas,
-          verificar referencias con los jefes que indicaste. No vendemos ni compartimos tu información con terceros para otros fines.
+          Usamos tus datos únicamente para evaluar tu candidatura y contactarte durante el proceso de selección. No vendemos
+          ni compartimos tu información con terceros para otros fines.
         </p>
         <p>
           Puedes solicitar el acceso, rectificación, cancelación u oposición al uso de tus datos (derechos ARCO) escribiendo al

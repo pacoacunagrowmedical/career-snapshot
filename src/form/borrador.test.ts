@@ -28,7 +28,14 @@ describe('avisos de sueldo', () => {
     expect(avisosPaso(2, conEmpleo(5000, 20000))['empleos.0.sueldoFinal']).toMatch(/triple/)
   })
   it('no avisa con sueldos normales', () => {
-    expect(avisosPaso(2, conEmpleo(15000, 21000))).toEqual({})
+    const a = avisosPaso(2, conEmpleo(15000, 21000))
+    expect(Object.keys(a).filter((k) => k.startsWith('empleos.'))).toEqual([])
+  })
+  it('pregunta si solo tuvo un empleo, y no con dos', () => {
+    expect(avisosPaso(2, conEmpleo(15000, 21000)).unicoEmpleo).toMatch(/Solo agregaste un empleo/)
+    const dos = conEmpleo(15000, 21000)
+    dos.empleos.push({ ...dos.empleos[0] })
+    expect(avisosPaso(2, dos).unicoEmpleo).toBeUndefined()
   })
 })
 

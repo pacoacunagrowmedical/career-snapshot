@@ -274,14 +274,14 @@ export function FormularioPage() {
                     {b.empleos.length > 1 && (
                       <button
                         type="button"
-                        className="btn btn-sm btn-ghost"
+                        className="btn btn-sm btn-quitar"
                         onClick={() => {
-                          if (!confirm(`¿Quitar ${j.empresa || 'este empleo'}?`)) return
+                          if (!confirm(`¿Quitar ${j.empresa || 'este empleo'} y todas sus respuestas?`)) return
                           set('empleos', b.empleos.filter((_, k) => k !== i))
                           setAbierto(Math.max(0, i - 1))
                         }}
                       >
-                        Quitar
+                        <IconoBasura /> Quitar empleo
                       </button>
                     )}
                   </header>
@@ -297,15 +297,21 @@ export function FormularioPage() {
                 </section>
               )
             })}
+            {avisos.unicoEmpleo && <div className="aviso-campo" role="status">{avisos.unicoEmpleo}</div>}
             <button
               type="button"
-              className="btn"
+              className="btn btn-agregar"
               onClick={() => {
                 set('empleos', [...b.empleos, empleoVacio()])
                 setAbierto(b.empleos.length)
+                setAvisos(({ unicoEmpleo: _, ...resto }) => resto)
               }}
             >
-              + Agregar empleo anterior
+              <span className="mas">+</span>
+              <span>
+                Agregar otro empleo
+                <small>Agrega cada empleo que hayas tenido, del más reciente al más antiguo</small>
+              </span>
             </button>
           </>
         )}
@@ -336,7 +342,7 @@ export function FormularioPage() {
                         <span className="num">{i + 1}</span>
                         <h3 style={{ flex: 1 }}>Periodo freelance</h3>
                         {b.freelance.length > 1 && (
-                          <button type="button" className="btn btn-sm btn-ghost" onClick={() => set('freelance', b.freelance.filter((_, k) => k !== i))}>Quitar</button>
+                          <button type="button" className="btn btn-sm btn-quitar" onClick={() => set('freelance', b.freelance.filter((_, k) => k !== i))}><IconoBasura /> Quitar periodo</button>
                         )}
                       </header>
                       <Campo label="¿Qué hacías?" req ayuda="Ej. Diseño de sitios WordPress, community management, tienda en línea." error={e('actividad')}>
@@ -362,7 +368,7 @@ export function FormularioPage() {
                     </section>
                   )
                 })}
-                <button type="button" className="btn" onClick={() => set('freelance', [...b.freelance, freelanceVacio()])}>+ Agregar otro periodo</button>
+                <button type="button" className="btn btn-agregar" onClick={() => set('freelance', [...b.freelance, freelanceVacio()])}><span className="mas">+</span><span>Agregar otro periodo freelance</span></button>
               </>
             )}
           </>
@@ -470,8 +476,8 @@ export function FormularioPage() {
               <label className="check">
                 <input type="checkbox" checked={b.avisoPrivacidad} onChange={(e) => set('avisoPrivacidad', e.target.checked)} />
                 <span className="small">
-                  Acepto que Grow Medical use los datos de esta solicitud únicamente para evaluar mi candidatura y, en su caso,
-                  contactar a las referencias que autoricé, conforme a su <a href="/aviso-de-privacidad" target="_blank">aviso de privacidad</a>.
+                  Acepto que Grow Medical use los datos de esta solicitud únicamente para evaluar mi candidatura, conforme a su{' '}
+                  <a href="/aviso-de-privacidad" target="_blank">aviso de privacidad</a>.
                 </span>
               </label>
               {err('avisoPrivacidad') && <div className="error">{err('avisoPrivacidad')}</div>}
@@ -479,7 +485,7 @@ export function FormularioPage() {
           </>
         )}
 
-        {Object.keys(avisos).length > 0 && Object.keys(errores).length === 0 && (
+        {Object.keys(avisos).some((k) => k !== 'unicoEmpleo') && Object.keys(errores).length === 0 && (
           <div className="aviso aviso-amarillo">Revisa los avisos en amarillo. Si tus datos son correctos, da clic en el botón de nuevo para continuar.</div>
         )}
         {errorEnvio && <div className="aviso aviso-amarillo">{errorEnvio}</div>}
@@ -492,5 +498,13 @@ export function FormularioPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+function IconoBasura() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6" />
+    </svg>
   )
 }

@@ -107,6 +107,9 @@ export function avisosPaso(paso: number, b: Borrador): Errores {
     if (s) a.sueldoEsperado = s
   }
   if (paso === 2) {
+    if (b.empleos.length === 1) {
+      a.unicoEmpleo = 'Solo agregaste un empleo. Si has tenido más, usa el botón “Agregar otro empleo”. Si este es tu único empleo, da Siguiente de nuevo.'
+    }
     const mesActual = mesDeFecha(new Date())
     b.empleos.forEach((j, i) => {
       const p = `empleos.${i}.`
