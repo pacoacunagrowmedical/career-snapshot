@@ -5,7 +5,7 @@ import { mesCorto } from '../lib/fechas'
 import { Campo, MesInput, Opciones, mesCompleto } from './campos'
 import { EmpleoCampos } from './EmpleoCampos'
 import {
-  PASOS, aSolicitud, borradorVacio, empleoVacio, esMexico, freelanceVacio, validarPaso,
+  PASOS, aSolicitud, avisosPaso, borradorVacio, empleoVacio, esMexico, freelanceVacio, validarPaso,
   type Borrador, type Errores,
 } from './borrador'
 import { DineroInput } from './campos'
@@ -29,6 +29,8 @@ export function FormularioPage() {
   const [b, setB] = useState<Borrador>(inicial.current.b)
   const [paso, setPaso] = useState(inicial.current.paso)
   const [errores, setErrores] = useState<Errores>({})
+  const [avisos, setAvisos] = useState<Errores>({})
+  const avisosVistos = useRef('')
   const [puestos, setPuestos] = useState<{ id: string; nombre: string }[] | null>(null)
   const [abierto, setAbierto] = useState(0)
   const [enviando, setEnviando] = useState(false)
@@ -58,6 +60,7 @@ export function FormularioPage() {
   const irA = (p: number) => {
     setPaso(p)
     setErrores({})
+    setAvisos({})
     requestAnimationFrame(() => arriba.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
   }
 
@@ -70,23 +73,34 @@ export function FormularioPage() {
       requestAnimationFrame(() => document.querySelector('.con-error, .error')?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
       return
     }
+    // Avisos: datos sospechosos (p. ej. sueldo que parece anual). Se muestran una vez; si el candidato vuelve a dar
+    // Siguiente sin cambiar nada, se respeta su respuesta.
+    const av = avisosPaso(paso, b)
+    const firma = JSON.stringify(av)
+    setAvisos(av)
+    if (Object.keys(av).length && firma !== avisosVistos.current) {
+      avisosVistos.current = firma
+      const conAviso = Object.keys(av).find((k) => k.startsWith('empleos.'))
+      if (conAviso) setAbierto(Number(conAviso.split('.')[1]))
+      requestAnimationFrame(() => document.querySelector('.aviso-campo')?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+      return
+    }
     if (paso < PASOS.length - 1) irA(paso + 1)
     else enviar()
   }
 
   const enviar = async () => {
     setErrorEnvio('')
-    // Protección contra bots: campo oculto y tiempo mínimo de llenado. Al bot se le muestra éxito y no se guarda nada.
+    // Protección contra bots: campo oculto y tiempo mínimo de llenado. No se descarta nada (el autocompletado del
+    // navegador podría llenar el campo oculto de una persona real); solo se marca para revisarlo en el panel.
     const borradorRecuperado = !!inicial.current.b.nombre
     const demasiadoRapido = !borradorRecuperado && (Date.now() - inicioMs.current) / 1000 < SEGUNDOS_MINIMOS
-    if (trampa || demasiadoRapido) {
-      setEnviado(true)
-      return
-    }
     setEnviando(true)
     try {
       const puesto = puestos?.find((p) => p.id === b.puestoId)
-      await (await store()).enviarSolicitud(aSolicitud(b, puesto?.nombre ?? ''))
+      const solicitud = aSolicitud(b, puesto?.nombre ?? '')
+      if (trampa || demasiadoRapido) solicitud.posibleBot = true
+      await (await store()).enviarSolicitud(solicitud)
       try {
         localStorage.removeItem(CLAVE_BORRADOR)
       } catch {
@@ -203,7 +217,7 @@ export function FormularioPage() {
               <Campo label="Correo electrónico" req error={err('email')}>
                 {(id) => <input id={id} type="email" className="input" autoComplete="email" maxLength={200} value={b.email} onChange={(e) => set('email', e.target.value)} />}
               </Campo>
-              <Campo label="Teléfono celular" req ayuda={esMexico(b.pais) ? '10 dígitos.' : 'Incluye la lada de tu país.'} error={err('telefono')}>
+              <Campo label="Teléfono celular" req ayuda={esMexico(b.pais) ? '10 dígitos (puedes incluir +52).' : 'Incluye la lada de tu país.'} error={err('telefono')}>
                 {(id) => <input id={id} type="tel" className="input tabular" autoComplete="tel" maxLength={30} value={b.telefono} onChange={(e) => set('telefono', e.target.value)} />}
               </Campo>
             </div>
@@ -222,6 +236,7 @@ export function FormularioPage() {
               req
               ayuda={`Sueldo mensual neto (después de impuestos)${esMexico(b.pais) ? ', en pesos mexicanos' : ''}. A lo largo del formulario todos los sueldos son mensuales y netos.`}
               error={err('sueldoEsperado')}
+              aviso={avisos.sueldoEsperado}
             >
               {(id) => <DineroInput id={id} valor={b.sueldoEsperado} onChange={(v) => set('sueldoEsperado', v)} />}
             </Campo>
@@ -275,6 +290,7 @@ export function FormularioPage() {
                       j={j}
                       i={i}
                       errores={errores}
+                      avisos={avisos}
                       onChange={(nuevo) => set('empleos', b.empleos.map((x, k) => (k === i ? nuevo : x)))}
                     />
                   )}
@@ -463,6 +479,9 @@ export function FormularioPage() {
           </>
         )}
 
+        {Object.keys(avisos).length > 0 && Object.keys(errores).length === 0 && (
+          <div className="aviso aviso-amarillo">Revisa los avisos en amarillo. Si tus datos son correctos, da clic en el botón de nuevo para continuar.</div>
+        )}
         {errorEnvio && <div className="aviso aviso-amarillo">{errorEnvio}</div>}
 
         <div className="paso-nav">

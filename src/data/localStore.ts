@@ -1,6 +1,7 @@
 import type { Candidato, Puesto } from '../types'
 import { CANDIDATOS_DEMO, PUESTOS_DEMO } from './demoSeed'
 import type { Store, Usuario } from './store'
+import { normalizarCandidato } from './normalizar'
 
 // Modo demo: todo vive en localStorage de este navegador. Sirve para probar sin un proyecto de Firebase.
 
@@ -33,7 +34,8 @@ function escribir(d: Datos) {
   }
 }
 
-const aCandidato = (c: Datos['candidatos'][number]): Candidato => ({ ...c, creado: new Date(c.creado) })
+const aCandidato = (c: Datos['candidatos'][number]): Candidato =>
+  normalizarCandidato(c.id, c as unknown as Record<string, unknown>, new Date(c.creado))
 
 export function crearLocalStore(): Store {
   const oyentes = new Set<(u: Usuario | null) => void>()

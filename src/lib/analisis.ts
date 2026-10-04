@@ -149,6 +149,7 @@ export function analizar(c: Candidato, sueldoOfrecido: number | null): Analisis 
 
   // ——— Banderas ———
   const n = empleos.length
+  if (c.posibleBot) banderas.push({ nivel: 'rojo', texto: 'Marcada como posible bot por el filtro automático; revisa si es una persona real' })
   if (incompletos) banderas.push({ nivel: 'amarillo', texto: `${incompletos} empleo(s) sin fecha de entrada; no aparecen en la cronología` })
 
   const desempleoActual = huecos.find((h) => h.actual)
@@ -261,5 +262,17 @@ export function analizar(c: Candidato, sueldoOfrecido: number | null): Analisis 
     referenciasVerificables,
     resumen,
     banderas,
+  }
+}
+
+/** Igual que analizar(), pero nunca truena: si los datos de un candidato vienen corruptos, devuelve un análisis vacío con aviso. */
+export function analizarSeguro(c: Candidato, sueldoOfrecido: number | null): Analisis {
+  try {
+    return analizar(c, sueldoOfrecido)
+  } catch (err) {
+    console.error('No se pudo analizar al candidato', c.id, err)
+    const vacio = analizar({ ...c, empleos: [], freelance: [] }, null)
+    vacio.banderas.unshift({ nivel: 'rojo', texto: 'Los datos de esta solicitud están incompletos o dañados; revisa las respuestas abajo' })
+    return vacio
   }
 }

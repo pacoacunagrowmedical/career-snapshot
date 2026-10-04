@@ -77,6 +77,56 @@ const vacio = (s: string) => !s.trim()
 const esMexico = (pais: string) => /^m[eé]xico$/i.test(pais.trim())
 const mesFuturo = (m: string) => indiceMes(m) > indiceMes(mesDeFecha(new Date()))
 
+/** Teléfono mexicano a 10 dígitos: acepta +52, 52 o 521 al inicio. */
+export function telefonoMx(t: string): string {
+  const d = t.replace(/\D/g, '')
+  if (d.length === 12 && d.startsWith('52')) return d.slice(2)
+  if (d.length === 13 && d.startsWith('521')) return d.slice(3)
+  return d
+}
+
+const monedaDe = (b: Borrador) => (esMexico(b.pais) ? 'MXN' : b.moneda)
+
+// Rangos razonables de sueldo MENSUAL neto por moneda. Fuera de ellos se pide confirmar (no se bloquea).
+const RANGOS: Record<string, [number, number]> = { MXN: [1000, 150000], USD: [100, 25000], EUR: [100, 25000] }
+
+function revisarSueldo(n: number, moneda: string): string | null {
+  const r = RANGOS[moneda]
+  if (!r || !(n > 0)) return null
+  if (n > r[1]) return 'Es una cantidad muy alta para un sueldo mensual. Recuerda que es mensual y neto, no anual ni bruto. Si es correcta, da Siguiente de nuevo.'
+  if (n < r[0]) return 'Parece muy baja. Escribe la cantidad completa (por ejemplo 15,000 y no 15). Si es correcta, da Siguiente de nuevo.'
+  return null
+}
+
+/** Avisos de datos sospechosos. No bloquean: el candidato puede confirmar y seguir. */
+export function avisosPaso(paso: number, b: Borrador): Errores {
+  const a: Errores = {}
+  const moneda = monedaDe(b)
+  if (paso === 1) {
+    const s = revisarSueldo(b.sueldoEsperado, moneda)
+    if (s) a.sueldoEsperado = s
+  }
+  if (paso === 2) {
+    const mesActual = mesDeFecha(new Date())
+    b.empleos.forEach((j, i) => {
+      const p = `empleos.${i}.`
+      const si = revisarSueldo(j.sueldoInicial, moneda)
+      const sf = revisarSueldo(j.sueldoFinal, moneda)
+      if (si) a[p + 'sueldoInicial'] = si
+      if (sf) a[p + 'sueldoFinal'] = sf
+      else if (j.sueldoInicial > 0 && j.sueldoFinal > j.sueldoInicial * 3) {
+        a[p + 'sueldoFinal'] = 'Es más del triple de tu sueldo al entrar. Revisa que ambas cantidades sean mensuales y netas. Si es correcto, da Siguiente de nuevo.'
+      } else if (j.sueldoFinal > 0 && j.sueldoFinal * 3 < j.sueldoInicial) {
+        a[p + 'sueldoFinal'] = 'Es menos de la tercera parte de tu sueldo al entrar. Revisa las cantidades. Si es correcto, da Siguiente de nuevo.'
+      }
+      if (!j.actual && j.fin === mesActual) {
+        a[p + 'fin'] = 'Si todavía trabajas aquí, marca “Trabajo aquí actualmente” arriba. Si ya saliste este mes, da Siguiente de nuevo.'
+      }
+    })
+  }
+  return a
+}
+
 export const PASOS = ['Inicio', 'Tus datos', 'Empleos', 'Freelance', 'Universidad', 'Fortalezas', 'Objetivos'] as const
 
 export function validarPaso(paso: number, b: Borrador): Errores {
@@ -91,7 +141,7 @@ export function validarPaso(paso: number, b: Borrador): Errores {
     if (!b.fechaNacimiento) e.fechaNacimiento = OBLIG
     if (vacio(b.pais)) e.pais = OBLIG
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email.trim())) e.email = 'Escribe un correo válido'
-    const digitos = b.telefono.replace(/\D/g, '')
+    const digitos = esMexico(b.pais) ? telefonoMx(b.telefono) : b.telefono.replace(/\D/g, '')
     if (esMexico(b.pais) ? digitos.length !== 10 : digitos.length < 7 || digitos.length > 15) {
       e.telefono = esMexico(b.pais) ? 'Escribe 10 dígitos, sin lada internacional' : 'Escribe un teléfono válido'
     }
@@ -194,7 +244,7 @@ export function aSolicitud(b: Borrador, puestoNombre: string): Solicitud {
     pais: b.pais.trim(),
     direccion: b.direccion.trim(),
     email: b.email.trim().toLowerCase(),
-    telefono: b.telefono.replace(/[^\d+]/g, ''),
+    telefono: esMexico(b.pais) ? telefonoMx(b.telefono) : b.telefono.replace(/[^\d+]/g, ''),
     moneda: esMexico(b.pais) ? 'MXN' : b.moneda,
     sueldoEsperado: b.sueldoEsperado,
     empleos,

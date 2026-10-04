@@ -2,7 +2,7 @@ import { useId, useState, type ReactNode } from 'react'
 import { MESES_LARGOS } from '../lib/catalogos'
 import { leerDinero } from '../lib/formato'
 
-export function Campo(props: { label: ReactNode; ayuda?: ReactNode; error?: string; req?: boolean; children: (id: string) => ReactNode }) {
+export function Campo(props: { label: ReactNode; ayuda?: ReactNode; error?: string; aviso?: string; req?: boolean; children: (id: string) => ReactNode }) {
   const id = useId()
   return (
     <div className={`campo${props.error ? ' con-error' : ''}`}>
@@ -13,6 +13,7 @@ export function Campo(props: { label: ReactNode; ayuda?: ReactNode; error?: stri
       {props.ayuda && <div className="ayuda">{props.ayuda}</div>}
       {props.children(id)}
       {props.error && <div className="error" role="alert">{props.error}</div>}
+      {!props.error && props.aviso && <div className="aviso-campo" role="status">{props.aviso}</div>}
     </div>
   )
 }

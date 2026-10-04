@@ -72,6 +72,7 @@ export interface Solicitud {
   debilidades: string
   objetivos: string
   avisoPrivacidad: boolean
+  posibleBot?: boolean // lo marcó el filtro contra bots; se guarda igual para no perder candidatos reales
 }
 
 export interface Candidato extends Solicitud {

@@ -66,12 +66,13 @@ export const MESES_LARGOS = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ]
 
+// Si llega un valor desconocido (dato corrupto o enviado fuera del formulario) se muestra en gris en vez de romper la vista.
 export function razon(codigo: CodigoSalida) {
-  return RAZONES_SALIDA.find((r) => r.codigo === codigo)!
+  return RAZONES_SALIDA.find((r) => r.codigo === codigo) ?? { codigo: '?' as CodigoSalida, etiqueta: 'Sin dato', ayuda: '', semaforo: 'gris' as Semaforo }
 }
 
 export function calificacion(valor: Calificacion) {
-  return CALIFICACIONES.find((c) => c.valor === valor)!
+  return CALIFICACIONES.find((c) => c.valor === valor) ?? { valor: '?' as unknown as Calificacion, etiqueta: 'Sin dato', semaforo: 'gris' as Semaforo }
 }
 
 export function etiquetaFuente(valor: string) {

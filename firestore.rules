@@ -19,7 +19,7 @@ service cloud.firestore {
       return d.keys().hasOnly([
           'puestoId', 'puestoNombre', 'fuente', 'fuenteDetalle', 'nombre', 'fechaNacimiento', 'pais',
           'direccion', 'email', 'telefono', 'moneda', 'sueldoEsperado', 'empleos', 'freelance',
-          'universidad', 'fortalezas', 'debilidades', 'objetivos', 'avisoPrivacidad', 'creado'])
+          'universidad', 'fortalezas', 'debilidades', 'objetivos', 'avisoPrivacidad', 'posibleBot', 'creado'])
         && texto(d.nombre, 200) && d.nombre.size() > 1
         && texto(d.email, 200) && d.email.matches('.+@.+[.].+')
         && texto(d.telefono, 30)

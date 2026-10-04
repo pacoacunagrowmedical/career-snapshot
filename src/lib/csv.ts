@@ -1,5 +1,5 @@
 import type { Candidato } from '../types'
-import { analizar } from './analisis'
+import { analizarSeguro as analizar } from './analisis'
 import { etiquetaFuente } from './catalogos'
 
 const celda = (v: unknown) => {

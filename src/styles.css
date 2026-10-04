@@ -240,3 +240,4 @@ table.tabla { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .snapshot-scroll { overflow-x: auto; }
 @media (max-width: 760px) { .snapshot-scroll .snapshot-svg { min-width: 760px; } }
+.aviso-campo { font-size: 0.85rem; color: #6b4b00; background: var(--amarillo-wash); border-radius: 6px; padding: 6px 10px; }

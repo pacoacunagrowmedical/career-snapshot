@@ -6,6 +6,7 @@ import {
   serverTimestamp, Timestamp, where, writeBatch,
 } from 'firebase/firestore'
 import type { Candidato, Solicitud } from '../types'
+import { normalizarCandidato } from './normalizar'
 import { DOMINIO_PERMITIDO, type Store } from './store'
 
 export function crearFirebaseStore(): Store {
@@ -113,6 +114,6 @@ export function crearFirebaseStore(): Store {
 
 function aCandidato(id: string, data: Record<string, unknown>): Candidato {
   const creado = data.creado instanceof Timestamp ? data.creado.toDate() : new Date()
-  return { ...(data as unknown as Solicitud), id, creado }
+  return normalizarCandidato(id, data, creado)
 }
 

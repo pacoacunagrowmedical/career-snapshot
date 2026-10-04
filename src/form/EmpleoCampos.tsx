@@ -8,15 +8,17 @@ export function EmpleoCampos(props: {
   j: EmpleoBorrador
   i: number
   errores: Errores
+  avisos: Errores
   onChange: (j: EmpleoBorrador) => void
 }) {
   const { j, i } = props
   const err = (k: string) => props.errores[`empleos.${i}.${k}`]
+  const avi = (k: string) => props.avisos[`empleos.${i}.${k}`]
   const set = <K extends keyof EmpleoBorrador>(k: K, v: EmpleoBorrador[K]) => props.onChange({ ...j, [k]: v })
 
   return (
     <div className="stack">
-      <Campo label="Nombre de la empresa" req error={err('empresa')}>
+      <Campo label="Nombre de la empresa" req ayuda="Solo empleos formales. Si fue freelance o por tu cuenta, no lo agregues aquí: va en el siguiente paso." error={err('empresa')}>
         {(id) => <input id={id} className="input" value={j.empresa} onChange={(e) => set('empresa', e.target.value)} />}
       </Campo>
 
@@ -61,17 +63,17 @@ export function EmpleoCampos(props: {
           {(id) => <MesInput id={id} valor={j.inicio} onChange={(v) => set('inicio', v)} />}
         </Campo>
         {!j.actual && (
-          <Campo label="Fecha de salida" req ayuda="Aproximada si no la recuerdas." error={err('fin')}>
+          <Campo label="Fecha de salida" req ayuda="Aproximada si no la recuerdas." error={err('fin')} aviso={avi('fin')}>
             {(id) => <MesInput id={id} valor={j.fin} onChange={(v) => set('fin', v)} />}
           </Campo>
         )}
       </div>
 
       <div className="grid-2">
-        <Campo label="¿Cuánto ganabas al mes cuando entraste?" req ayuda="Sueldo mensual neto (después de impuestos)." error={err('sueldoInicial')}>
+        <Campo label="¿Cuánto ganabas al mes cuando entraste?" req ayuda="Sueldo mensual neto (después de impuestos)." error={err('sueldoInicial')} aviso={avi('sueldoInicial')}>
           {(id) => <DineroInput id={id} valor={j.sueldoInicial} onChange={(v) => set('sueldoInicial', v)} />}
         </Campo>
-        <Campo label={j.actual ? '¿Cuánto ganas al mes actualmente?' : '¿Cuánto ganabas al mes cuando saliste?'} req ayuda="Sueldo mensual neto." error={err('sueldoFinal')}>
+        <Campo label={j.actual ? '¿Cuánto ganas al mes actualmente?' : '¿Cuánto ganabas al mes cuando saliste?'} req ayuda="Sueldo mensual neto." error={err('sueldoFinal')} aviso={avi('sueldoFinal')}>
           {(id) => <DineroInput id={id} valor={j.sueldoFinal} onChange={(v) => set('sueldoFinal', v)} />}
         </Campo>
       </div>

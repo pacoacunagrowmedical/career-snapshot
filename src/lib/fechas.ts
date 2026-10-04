@@ -18,7 +18,8 @@ export function mesDeFecha(d: Date): Mes {
 }
 
 /** "Feb 2022" */
-export function mesCorto(mes: Mes): string {
+export function mesCorto(mes: Mes | null | undefined): string {
+  if (!mes || !/^\d{4}-\d{2}$/.test(mes)) return '?'
   const [a, m] = mes.split('-').map(Number)
   return `${MESES[m - 1]} ${a}`
 }
