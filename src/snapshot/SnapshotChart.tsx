@@ -210,7 +210,25 @@ export function SnapshotChart({ a, moneda, sueldoEsperado, sueldoOfrecido }: Pro
         {/* Áreas de sueldo por empleo */}
         {a.empleos.map((t) => {
           const s = sueldos(t)
-          if (!s.hay) return null // sin sueldo: el empleo aparece en las filas, pero no en la gráfica
+          if (!s.hay) {
+            // Sin sueldo (no pagado, "N/A" o sin dato): franja punteada sobre el eje para que el empleo no desaparezca.
+            const x0 = x(t.desde)
+            const w = Math.max(2, x(t.hasta) - x0)
+            const c = colorEmpleo(t.numero)
+            return (
+              <g key={t.numero}>
+                <rect x={x0} y={base - 18} width={w} height={18} fill={c} opacity={0.15} />
+                <rect x={x0} y={base - 18} width={w} height={18} fill="none" stroke={c} strokeWidth={1.5} strokeDasharray="4 3" />
+                {w > 22 && (
+                  <g>
+                    <circle cx={x0 + 11} cy={base - 9} r={7.5} fill={c} />
+                    <text x={x0 + 11} y={base - 5.5} textAnchor="middle" fontSize={10} fontWeight={700} fill={tintaEmpleo(t.numero)}>{t.numero}</text>
+                  </g>
+                )}
+                {w > 90 && <text x={x0 + 24} y={base - 5} fontSize={11} fill="var(--text-2)">sin sueldo reportado</text>}
+              </g>
+            )
+          }
           const x0 = x(t.desde)
           const x1 = Math.max(x0 + 2, x(t.hasta))
           const y0 = y(s.i)
@@ -308,6 +326,9 @@ export function SnapshotChart({ a, moneda, sueldoEsperado, sueldoOfrecido }: Pro
             ) : null}
             <li><span className="swatch" style={{ background: 'var(--rojo-wash)', border: '1px solid var(--rojo)' }} /> Sin empleo (punteado = vigente al aplicar)</li>
             <li><span className="swatch" style={{ background: 'url(#rayado)', backgroundImage: 'repeating-linear-gradient(45deg, var(--gris) 0 2px, var(--gris-wash) 2px 6px)' }} /> Freelance (cuenta como sin empleo)</li>
+            {a.empleos.some((t) => !sueldos(t).hay) && (
+              <li><span className="swatch" style={{ border: '1.5px dashed var(--text-3)' }} /> Empleo sin sueldo reportado</li>
+            )}
           </ul>
         </div>
         <div className="leyenda">

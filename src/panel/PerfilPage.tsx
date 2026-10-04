@@ -140,7 +140,9 @@ export function PerfilPage() {
                       <div className="muted small">{duracion(t.meses)}</div>
                     </td>
                     <td className="num-col">
-                      {dinero(t.empleo.sueldoInicial, c.moneda)} → {dinero(t.empleo.sueldoFinal, c.moneda)}
+                      {t.empleo.sueldoInicial || t.empleo.sueldoFinal
+                        ? `${dinero(t.empleo.sueldoInicial || null, c.moneda)} → ${dinero(t.empleo.sueldoFinal || null, c.moneda)}`
+                        : <span className="muted">Sin sueldo reportado</span>}
                       {t.empleo.sueldoInicial > 0 && <div className="muted small">{porcentaje(t.empleo.sueldoFinal / t.empleo.sueldoInicial - 1)}</div>}
                     </td>
                     <td className="num-col">{t.empleo.ascensos >= 5 ? '5+' : t.empleo.ascensos}</td>
