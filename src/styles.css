@@ -253,3 +253,39 @@ table.tabla { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .btn-agregar.completo { border-style: solid; border-width: 1px; border-color: var(--border-strong); background: var(--surface); color: var(--text-2); }
 .btn-agregar.completo .mas { background: var(--gris); }
 .codigo { min-width: 64px; padding: 0 8px; font-weight: 650; }
+
+/* ——— Seguimiento: etapas, etiquetas, notas, tablero ——— */
+.seguimiento { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+.select-sm { min-height: 32px; padding: 4px 8px; width: auto; font-size: 0.875rem; }
+.etiquetas { display: flex; gap: 4px; flex-wrap: wrap; }
+.etiqueta { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; color: #172b4d; white-space: nowrap; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+.etiqueta.chica { font-size: 0.7rem; padding: 1px 6px; }
+.selector-etiquetas { position: relative; }
+.popover { position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; width: 260px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.14); padding: 12px; }
+.colores { display: flex; gap: 6px; flex-wrap: wrap; }
+.colores button { width: 22px; height: 22px; border-radius: 5px; border: 2px solid transparent; padding: 0; }
+.colores button.activo { border-color: var(--text); }
+.link-btn { background: none; border: 0; padding: 0; color: var(--brand); text-decoration: underline; cursor: pointer; }
+ol.notas { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.nota { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--surface-2); font-size: 0.92rem; }
+.nota-cambio { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-2); padding: 0 4px; }
+.nota-cambio .punto { width: 8px; height: 8px; border-radius: 50%; background: var(--brand); flex: none; align-self: center; }
+.vista-toggle { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden; }
+.vista-toggle button { border: 0; background: var(--surface); padding: 6px 12px; font-weight: 550; color: var(--text-2); }
+.vista-toggle button.activo { background: var(--brand-wash); color: var(--brand); }
+.tablero { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px; align-items: flex-start; }
+.columna { flex: 0 0 260px; background: #ebeef0; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 230px); }
+.columna.sobre { outline: 2px dashed var(--brand); background: var(--brand-wash); }
+.columna header { display: flex; justify-content: space-between; gap: 8px; font-weight: 650; font-size: 0.88rem; padding: 2px 4px; }
+.columna .tarjetas { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 40px; }
+.tarjeta { background: var(--surface); border-radius: 8px; padding: 10px; box-shadow: 0 1px 1px rgba(9,30,66,.2); cursor: grab; text-decoration: none; color: var(--text); display: block; }
+.tarjeta:hover { box-shadow: 0 0 0 2px var(--brand); }
+.tarjeta.arrastrando { opacity: 0.4; }
+.tarjeta .nombre { font-weight: 600; font-size: 0.92rem; margin-top: 4px; }
+.tarjeta .meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 6px; font-size: 0.75rem; color: var(--text-2); }
+@media print { .no-print-notas { display: none; } }
+.tarjeta .meta .dot { width: 8px; height: 8px; border-radius: 50%; }
+.popover { color: var(--text); }
+.popover.arriba { top: auto; bottom: calc(100% + 6px); left: auto; right: 0; }
+.barra-seleccion .select-sm { background: var(--surface); color: var(--text); }
+.panel-main:has(.tablero) { max-width: none; }

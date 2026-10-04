@@ -2,10 +2,10 @@ import { initializeApp } from 'firebase/app'
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check'
 import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import {
-  addDoc, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, orderBy, query,
-  serverTimestamp, Timestamp, where, writeBatch,
+  addDoc, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, increment, orderBy, query,
+  serverTimestamp, setDoc, Timestamp, updateDoc, where, writeBatch,
 } from 'firebase/firestore'
-import type { Candidato, Solicitud } from '../types'
+import type { Candidato, Nota, Solicitud } from '../types'
 import { normalizarCandidato } from './normalizar'
 import { DOMINIO_PERMITIDO, type Store } from './store'
 
@@ -114,14 +114,87 @@ export function crearFirebaseStore(): Store {
     },
 
     async borrarCandidatos(ids) {
-      for (let i = 0; i < ids.length; i += 400) {
+      // Cada candidato se borra junto con sus notas en un mismo lote (las reglas lo permiten solo si el candidato desaparece).
+      for (const id of ids) {
+        const notas = await getDocs(collection(db, 'candidatos', id, 'notas'))
+        if (notas.size > 490) throw new Error('Este candidato tiene demasiadas notas para borrarlo de una vez')
         const batch = writeBatch(db)
-        for (const id of ids.slice(i, i + 400)) batch.delete(doc(db, 'candidatos', id))
+        notas.docs.forEach((d) => batch.delete(d.ref))
+        batch.delete(doc(db, 'candidatos', id))
         await batch.commit()
       }
     },
+
+    async actualizarCandidatos(ids, cambios) {
+      const datos: Record<string, unknown> = {}
+      if (cambios.etapa !== undefined) datos.etapa = cambios.etapa
+      if (cambios.etiquetas !== undefined) datos.etiquetas = cambios.etiquetas
+      for (let i = 0; i < ids.length; i += 400) {
+        const batch = writeBatch(db)
+        for (const id of ids.slice(i, i + 400)) batch.update(doc(db, 'candidatos', id), datos)
+        await batch.commit()
+      }
+    },
+
+    async etiquetas() {
+      const snap = await getDocs(collection(db, 'etiquetas'))
+      return snap.docs
+        .map((d) => ({ id: d.id, nombre: d.get('nombre') as string, color: d.get('color') as string }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre))
+    },
+
+    async guardarEtiqueta(e) {
+      const ref = e.id ? doc(db, 'etiquetas', e.id) : doc(collection(db, 'etiquetas'))
+      await setDoc(ref, { nombre: e.nombre, color: e.color })
+      return { id: ref.id, nombre: e.nombre, color: e.color }
+    },
+
+    async borrarEtiqueta(id) {
+      await deleteDoc(doc(db, 'etiquetas', id))
+    },
+
+    async notas(candidatoId) {
+      const snap = await getDocs(query(collection(db, 'candidatos', candidatoId, 'notas'), orderBy('creado', 'desc')))
+      return snap.docs.map((d): Nota => ({
+        id: d.id,
+        tipo: d.get('tipo') === 'cambio' ? 'cambio' : 'nota',
+        texto: (d.get('texto') as string) ?? '',
+        autorEmail: (d.get('autorEmail') as string) ?? '',
+        autorNombre: (d.get('autorNombre') as string) ?? '',
+        creado: d.get('creado') instanceof Timestamp ? (d.get('creado') as Timestamp).toDate() : new Date(),
+        editado: d.get('editado') instanceof Timestamp ? (d.get('editado') as Timestamp).toDate() : null,
+      }))
+    },
+
+    async agregarNota(candidatoId, texto, tipo = 'nota') {
+      const u = auth.currentUser
+      if (!u?.email) throw new Error('Sesión no iniciada')
+      const batch = writeBatch(db)
+      batch.set(doc(collection(db, 'candidatos', candidatoId, 'notas')), {
+        tipo, texto, autorEmail: u.email, autorNombre: u.displayName ?? u.email, creado: serverTimestamp(), editado: null,
+      })
+      if (tipo === 'nota') batch.update(doc(db, 'candidatos', candidatoId), { numNotas: increment(1) })
+      await batch.commit()
+    },
+
+    async editarNota(candidatoId, notaId, texto) {
+      await updateDoc(doc(db, 'candidatos', candidatoId, 'notas', notaId), { texto, editado: serverTimestamp() })
+    },
+
+    async borrarNota(candidatoId, notaId) {
+      const batch = writeBatch(db)
+      batch.delete(doc(db, 'candidatos', candidatoId, 'notas', notaId))
+      batch.update(doc(db, 'candidatos', candidatoId), { numNotas: increment(-1) })
+      await batch.commit()
+    },
+
+    usuarioActual() {
+      const u = auth.currentUser
+      return u?.email ? { email: u.email, nombre: u.displayName ?? u.email } : null
+    },
   }
 }
+
 
 function aCandidato(id: string, data: Record<string, unknown>): Candidato {
   const creado = data.creado instanceof Timestamp ? data.creado.toDate() : new Date()

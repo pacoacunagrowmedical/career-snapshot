@@ -38,7 +38,36 @@ service cloud.firestore {
       // El equipo además puede crear registros directamente (importación desde el formulario anterior).
       allow create: if solicitudValida(request.resource.data) || esEquipo();
       allow read, delete: if esEquipo();
-      allow update: if false;
+      // El equipo solo puede cambiar el seguimiento (etapa, etiquetas, contador de notas), nunca las respuestas del candidato.
+      allow update: if esEquipo()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['etapa', 'etiquetas', 'numNotas']);
+
+      // Notas y registro de cambios de etapa.
+      match /notas/{nota} {
+        allow read: if esEquipo();
+        allow create: if esEquipo()
+          && request.resource.data.keys().hasOnly(['tipo', 'texto', 'autorEmail', 'autorNombre', 'creado', 'editado'])
+          && request.resource.data.tipo in ['nota', 'cambio']
+          && texto(request.resource.data.texto, 10000)
+          && request.resource.data.autorEmail == request.auth.token.email
+          && request.resource.data.creado == request.time
+          && request.resource.data.editado == null;
+        // Solo quien escribió una nota puede editarla o borrarla. Los registros de cambio de etapa no se editan.
+        allow update: if esEquipo()
+          && resource.data.tipo == 'nota'
+          && resource.data.autorEmail == request.auth.token.email
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['texto', 'editado'])
+          && texto(request.resource.data.texto, 10000);
+        // Al eliminar al candidato se eliminan todas sus notas en el mismo lote.
+        allow delete: if esEquipo() && (
+          (resource.data.tipo == 'nota' && resource.data.autorEmail == request.auth.token.email)
+          || !existsAfter(/databases/$(database)/documents/candidatos/$(id)));
+      }
+    }
+
+    // Etiquetas que define el equipo.
+    match /etiquetas/{id} {
+      allow read, write: if esEquipo();
     }
 
     // Puestos: el nombre es público (el formulario lo necesita); editar es del equipo.

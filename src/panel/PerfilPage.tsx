@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import type { Store } from '../data/store'
-import type { Candidato, Puesto } from '../types'
+import type { Candidato, Etiqueta, Puesto } from '../types'
 import { analizarSeguro as analizar } from '../lib/analisis'
-import { CONTACTO_JEFE, PRESTACIONES, calificacion, etiquetaFuente, razon } from '../lib/catalogos'
+import { CONTACTO_JEFE, ETAPAS, PRESTACIONES, calificacion, etiquetaFuente, razon } from '../lib/catalogos'
 import { candidatosACsv, descargar } from '../lib/csv'
 import { duracion, edad, fechaCorta, mesCorto } from '../lib/fechas'
 import { dinero, porcentaje } from '../lib/formato'
 import { SnapshotChart, colorEmpleo } from '../snapshot/SnapshotChart'
 import { ConfirmarBorrado } from './ConfirmarBorrado'
+import { ListaEtiquetas, SelectorEtiquetas } from './Etiquetas'
+import { Notas } from './Notas'
+import { moverAEtapa } from './seguimiento'
 
 export function PerfilPage() {
   const s = useOutletContext<Store>()
@@ -17,13 +20,30 @@ export function PerfilPage() {
   const [c, setC] = useState<Candidato | null | undefined>(undefined)
   const [puestos, setPuestos] = useState<Puesto[]>([])
   const [borrar, setBorrar] = useState(false)
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
+  const [recargarNotas, setRecargarNotas] = useState(0)
 
   useEffect(() => {
-    Promise.all([s.candidato(id!), s.puestos()]).then(([cand, p]) => {
+    Promise.all([s.candidato(id!), s.puestos(), s.etiquetas()]).then(([cand, p, e]) => {
       setC(cand)
       setPuestos(p)
+      setEtiquetas(e)
     })
   }, [s, id])
+
+  const cambiarEtapa = async (destino: string) => {
+    if (!c) return
+    await moverAEtapa(s, [c], destino)
+    setC({ ...c, etapa: destino })
+    setRecargarNotas((n) => n + 1)
+  }
+
+  const cambiarEtiqueta = async (etiquetaId: string, marcar: boolean) => {
+    if (!c) return
+    const nuevas = marcar ? [...new Set([...c.etiquetas, etiquetaId])] : c.etiquetas.filter((x) => x !== etiquetaId)
+    setC({ ...c, etiquetas: nuevas })
+    await s.actualizarCandidatos([c.id], { etiquetas: nuevas })
+  }
 
   if (c === undefined) return <p className="muted">Cargando…</p>
   if (c === null) return <div className="vacio">Este candidato no existe o fue eliminado. <Link to="/panel">Volver a la lista</Link></div>
@@ -46,6 +66,22 @@ export function PerfilPage() {
         <div style={{ flex: 1, minWidth: 260 }}>
           <h1>{c.nombre}</h1>
           <div style={{ marginTop: 2 }}>Aplica a <b>{c.puestoNombre}</b> · {fechaCorta(c.creado)}</div>
+          <div className="seguimiento no-print">
+            <label className="row" style={{ gap: 8 }}>
+              <span className="small muted">Etapa</span>
+              <select className="select select-sm" value={c.etapa} onChange={(e) => cambiarEtapa(e.target.value)}>
+                {ETAPAS.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+              </select>
+            </label>
+            <ListaEtiquetas ids={c.etiquetas} todas={etiquetas} />
+            <SelectorEtiquetas
+              s={s}
+              todas={etiquetas}
+              seleccion={c.etiquetas}
+              onCambiar={cambiarEtiqueta}
+              onEtiquetasCambiadas={setEtiquetas}
+            />
+          </div>
           {c.origen === 'formulario-anterior' && (
             <div className="aviso small" style={{ marginTop: 8 }}>
               Importado del formulario anterior. No incluye fuente, sueldo esperado ni las calificaciones de resultados y trato con la gente
@@ -153,6 +189,8 @@ export function PerfilPage() {
           </div>
         </section>
       </div>
+
+      <Notas s={s} candidatoId={c.id} recargar={recargarNotas} />
 
       <section className="card respuestas" style={{ marginBottom: 20 }}>
         <h2>Respuestas por empleo</h2>

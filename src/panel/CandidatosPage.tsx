@@ -1,13 +1,25 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import type { Store } from '../data/store'
-import type { Candidato, Puesto } from '../types'
+import type { Candidato, Etiqueta, Puesto } from '../types'
 import { analizarSeguro as analizar } from '../lib/analisis'
-import { FUENTES, etiquetaFuente } from '../lib/catalogos'
+import { ETAPAS, FUENTES, etiquetaFuente } from '../lib/catalogos'
 import { candidatosACsv, descargar } from '../lib/csv'
 import { duracion, fechaCorta } from '../lib/fechas'
 import { dinero } from '../lib/formato'
 import { ConfirmarBorrado } from './ConfirmarBorrado'
+import { ListaEtiquetas, SelectorEtiquetas } from './Etiquetas'
+import { Tablero } from './Tablero'
+import { moverAEtapa } from './seguimiento'
+
+const CLAVE_VISTA = 'snapshot-vista'
+const vistaGuardada = (): 'lista' | 'tablero' => {
+  try {
+    return localStorage.getItem(CLAVE_VISTA) === 'tablero' ? 'tablero' : 'lista'
+  } catch {
+    return 'lista'
+  }
+}
 
 export function CandidatosPage() {
   const s = useOutletContext<Store>()
@@ -16,15 +28,20 @@ export function CandidatosPage() {
   const [busqueda, setBusqueda] = useState('')
   const [puesto, setPuesto] = useState('')
   const [fuente, setFuente] = useState('')
+  const [etapaFiltro, setEtapaFiltro] = useState('')
+  const [etiquetaFiltro, setEtiquetaFiltro] = useState('')
+  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
+  const [vista, setVista] = useState(vistaGuardada)
   const [sel, setSel] = useState<Set<string>>(new Set())
   const [borrar, setBorrar] = useState<Candidato[] | null>(null)
   const [error, setError] = useState('')
 
   const cargar = () =>
-    Promise.all([s.candidatos(), s.puestos()])
-      .then(([c, p]) => {
+    Promise.all([s.candidatos(), s.puestos(), s.etiquetas()])
+      .then(([c, p, e]) => {
         setCandidatos(c)
         setPuestos(p)
+        setEtiquetas(e)
       })
       .catch((e: Error) => setError(e.message))
 
@@ -39,9 +56,39 @@ export function CandidatosPage() {
     const q = busqueda.trim().toLowerCase()
     return candidatos
       .filter((c) => (!puesto || c.puestoId === puesto) && (!fuente || c.fuente === fuente))
+      .filter((c) => (!etapaFiltro || c.etapa === etapaFiltro) && (!etiquetaFiltro || c.etiquetas.includes(etiquetaFiltro)))
       .filter((c) => !q || `${c.nombre} ${c.email} ${c.empleos.map((e) => e.empresa).join(' ')}`.toLowerCase().includes(q))
       .map((c) => ({ c, a: analizar(c, sueldos.get(c.puestoId) ?? null) }))
-  }, [candidatos, busqueda, puesto, fuente, sueldos])
+  }, [candidatos, busqueda, puesto, fuente, etapaFiltro, etiquetaFiltro, sueldos])
+
+  // Cambios del equipo: se reflejan al instante en pantalla y se guardan en segundo plano.
+  const aplicar = (ids: string[], cambio: (c: Candidato) => Candidato) =>
+    setCandidatos((cs) => cs && cs.map((c) => (ids.includes(c.id) ? cambio(c) : c)))
+
+  const mover = async (cs: Candidato[], destino: string) => {
+    aplicar(cs.map((c) => c.id), (c) => ({ ...c, etapa: destino }))
+    try {
+      await moverAEtapa(s, cs, destino)
+    } catch (e) {
+      setError(`No se pudo mover: ${(e as Error).message}`)
+      cargar()
+    }
+  }
+
+  const marcarEtiqueta = async (cs: Candidato[], etiquetaId: string, marcar: boolean) => {
+    const nuevas = new Map(cs.map((c) => [c.id, marcar ? [...new Set([...c.etiquetas, etiquetaId])] : c.etiquetas.filter((x) => x !== etiquetaId)]))
+    aplicar([...nuevas.keys()], (c) => ({ ...c, etiquetas: nuevas.get(c.id)! }))
+    await Promise.all([...nuevas].map(([id, ets]) => s.actualizarCandidatos([id], { etiquetas: ets })))
+  }
+
+  const cambiarVista = (v: 'lista' | 'tablero') => {
+    setVista(v)
+    try {
+      localStorage.setItem(CLAVE_VISTA, v)
+    } catch {
+      /* sin almacenamiento */
+    }
+  }
 
   const visiblesSel = filas.filter((f) => sel.has(f.c.id))
   const todos = filas.length > 0 && visiblesSel.length === filas.length
@@ -56,6 +103,10 @@ export function CandidatosPage() {
       <div className="row" style={{ marginBottom: 16 }}>
         <h1>Candidatos</h1>
         <span className="muted">{filas.length} de {candidatos.length}</span>
+        <div className="vista-toggle" role="group" aria-label="Vista">
+          <button className={vista === 'lista' ? 'activo' : ''} onClick={() => cambiarVista('lista')}>☰ Lista</button>
+          <button className={vista === 'tablero' ? 'activo' : ''} onClick={() => cambiarVista('tablero')}>▥ Tablero</button>
+        </div>
         <div className="spacer" />
         <a className="btn btn-sm" href="/" target="_blank" rel="noreferrer">Ver formulario ↗</a>
         <button className="btn btn-sm" onClick={() => exportar(filas.map((f) => f.c))} disabled={!filas.length}>Exportar CSV</button>
@@ -71,9 +122,21 @@ export function CandidatosPage() {
           <option value="">Todas las fuentes</option>
           {FUENTES.map((f) => <option key={f.valor} value={f.valor}>{f.etiqueta}</option>)}
         </select>
+        {vista === 'lista' && (
+          <select className="select" value={etapaFiltro} onChange={(e) => setEtapaFiltro(e.target.value)}>
+            <option value="">Todas las etapas</option>
+            {ETAPAS.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+          </select>
+        )}
+        <select className="select" value={etiquetaFiltro} onChange={(e) => setEtiquetaFiltro(e.target.value)}>
+          <option value="">Todas las etiquetas</option>
+          {etiquetas.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+        </select>
       </div>
 
-      {!filas.length ? (
+      {vista === 'tablero' && candidatos.length > 0 ? (
+        <Tablero filas={filas} etiquetas={etiquetas} onMover={(c, destino) => mover([c], destino)} />
+      ) : !filas.length ? (
         <div className="tabla-wrap vacio">{candidatos.length ? 'Ningún candidato coincide con los filtros.' : 'Aún no hay solicitudes. Comparte la liga del formulario para empezar a recibirlas.'}</div>
       ) : (
         <div className="tabla-wrap">
@@ -89,6 +152,7 @@ export function CandidatosPage() {
                   />
                 </th>
                 <th>Candidato</th>
+                <th>Etapa</th>
                 <th>Puesto</th>
                 <th>Aplicó</th>
                 <th>Trayectoria</th>
@@ -123,7 +187,14 @@ export function CandidatosPage() {
                       <div className="muted small">
                         {c.origen === 'formulario-anterior' ? 'Formulario anterior' : etiquetaFuente(c.fuente)}
                         {c.pais && c.pais !== 'México' ? ` · ${c.pais}` : ''}
+                        {c.numNotas > 0 && ` · 💬 ${c.numNotas}`}
                       </div>
+                      <div style={{ marginTop: 4 }}><ListaEtiquetas ids={c.etiquetas} todas={etiquetas} chico /></div>
+                    </td>
+                    <td>
+                      <select className="select select-sm" style={{ maxWidth: 190 }} value={c.etapa} onChange={(e) => mover([c], e.target.value)} aria-label={`Etapa de ${c.nombre}`}>
+                        {ETAPAS.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+                      </select>
                     </td>
                     <td>{c.puestoNombre}</td>
                     <td className="tabular" style={{ whiteSpace: 'nowrap' }}>{fechaCorta(c.creado)}</td>
@@ -157,6 +228,24 @@ export function CandidatosPage() {
           <b>{visiblesSel.length} {visiblesSel.length === 1 ? 'seleccionado' : 'seleccionados'}</b>
           <button className="btn btn-sm btn-ghost" style={{ color: '#fff' }} onClick={() => setSel(new Set())}>Quitar selección</button>
           <div className="spacer" />
+          <select
+            className="select select-sm"
+            value=""
+            onChange={(e) => e.target.value && mover(visiblesSel.map((f) => f.c), e.target.value)}
+            aria-label="Mover seleccionados a otra etapa"
+          >
+            <option value="">Mover a…</option>
+            {ETAPAS.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+          </select>
+          <SelectorEtiquetas
+            s={s}
+            todas={etiquetas}
+            seleccion={etiquetas.filter((e) => visiblesSel.every((f) => f.c.etiquetas.includes(e.id))).map((e) => e.id)}
+            parcial={etiquetas.filter((e) => visiblesSel.some((f) => f.c.etiquetas.includes(e.id))).map((e) => e.id)}
+            onCambiar={(id, marcar) => marcarEtiqueta(visiblesSel.map((f) => f.c), id, marcar)}
+            onEtiquetasCambiadas={setEtiquetas}
+            arriba
+          />
           <button className="btn btn-sm" onClick={() => exportar(visiblesSel.map((f) => f.c))}>Exportar CSV</button>
           <button className="btn btn-sm btn-danger" onClick={() => setBorrar(visiblesSel.map((f) => f.c))}>Eliminar…</button>
         </div>

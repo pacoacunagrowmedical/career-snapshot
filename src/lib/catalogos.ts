@@ -33,6 +33,40 @@ export const ASPECTOS_CALIFICACION = [
   { clave: 'trato', etiqueta: 'Trato con la gente', pregunta: '¿Cómo te calificaría en trato con la gente (compañeros, jefes, clientes)?' },
 ] as const
 
+// Etapas del proceso (mismas columnas que el tablero de Trello, más Nuevo / Contratado / Descartado).
+export const ETAPAS = [
+  { id: 'nuevo', nombre: 'Nuevo' },
+  { id: 'entrevista-escrita', nombre: 'Entrevista escrita, HCF y video' },
+  { id: 'llamada-filtrado', nombre: 'Llamada telefónica de filtrado' },
+  { id: 'entrevista-who', nombre: 'Entrevista Who y competencias' },
+  { id: 'entrevistas-complementarias', nombre: 'Entrevistas complementarias' },
+  { id: 'psicometrica', nombre: 'Prueba psicométrica' },
+  { id: 'conocimiento', nombre: 'Pruebas de conocimiento' },
+  { id: 'practica', nombre: 'Prueba práctica' },
+  { id: 'referencias', nombre: 'Llamadas de referencia' },
+  { id: 'contratado', nombre: 'Contratado' },
+  { id: 'descartado', nombre: 'Descartado' },
+] as const
+
+export function etapa(id: string) {
+  return ETAPAS.find((e) => e.id === id) ?? ETAPAS[0]
+}
+
+export const COLORES_ETIQUETA = [
+  { id: 'verde', hex: '#4bce97' },
+  { id: 'amarillo', hex: '#f5cd47' },
+  { id: 'naranja', hex: '#fea362' },
+  { id: 'rojo', hex: '#f87168' },
+  { id: 'morado', hex: '#9f8fef' },
+  { id: 'azul', hex: '#579dff' },
+  { id: 'celeste', hex: '#6cc3e0' },
+  { id: 'rosa', hex: '#e774bb' },
+  { id: 'lima', hex: '#94c748' },
+  { id: 'gris', hex: '#8590a2' },
+]
+
+export const colorEtiqueta = (id: string) => COLORES_ETIQUETA.find((c) => c.id === id)?.hex ?? '#8590a2'
+
 export const PRESTACIONES: { valor: Prestaciones; etiqueta: string }[] = [
   { valor: 'sin', etiqueta: 'Sin prestaciones de ley' },
   { valor: 'ley', etiqueta: 'Solo las prestaciones de ley' },

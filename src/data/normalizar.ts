@@ -1,4 +1,5 @@
 import type { Candidato, Empleo, PeriodoFreelance, Universidad } from '../types'
+import { ETAPAS } from '../lib/catalogos'
 
 // Convierte lo que venga de la base de datos en un Candidato completo. Las reglas de Firestore validan lo básico,
 // pero no cada empleo; si alguien escribe directo a la base de datos, un campo faltante no debe tumbar el panel.
@@ -89,5 +90,8 @@ export function normalizarCandidato(id: string, raw: Record<string, unknown>, cr
     posibleBot: bool(raw.posibleBot),
     origen: raw.origen === 'formulario-anterior' ? 'formulario-anterior' : undefined,
     claveImportacion: txt(raw.claveImportacion) || undefined,
+    etapa: ETAPAS.some((e) => e.id === raw.etapa) ? (raw.etapa as string) : 'nuevo',
+    etiquetas: lista(raw.etiquetas).map(txt).filter(Boolean),
+    numNotas: Math.max(0, num(raw.numNotas)),
   }
 }

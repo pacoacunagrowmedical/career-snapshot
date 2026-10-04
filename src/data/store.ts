@@ -1,4 +1,4 @@
-import type { Candidato, Puesto, Solicitud } from '../types'
+import type { Candidato, Etiqueta, Nota, Puesto, Solicitud } from '../types'
 
 export interface Usuario {
   email: string
@@ -23,6 +23,16 @@ export interface Store {
   candidato(id: string): Promise<Candidato | null>
   borrarCandidatos(ids: string[]): Promise<void>
   importarCandidatos(cs: (Solicitud & { creado: Date })[]): Promise<void>
+  // Seguimiento
+  actualizarCandidatos(ids: string[], cambios: { etapa?: string; etiquetas?: string[] }): Promise<void>
+  etiquetas(): Promise<Etiqueta[]>
+  guardarEtiqueta(e: Omit<Etiqueta, 'id'> & { id?: string }): Promise<Etiqueta>
+  borrarEtiqueta(id: string): Promise<void>
+  notas(candidatoId: string): Promise<Nota[]>
+  agregarNota(candidatoId: string, texto: string, tipo?: Nota['tipo']): Promise<void>
+  editarNota(candidatoId: string, notaId: string, texto: string): Promise<void>
+  borrarNota(candidatoId: string, notaId: string): Promise<void>
+  usuarioActual(): Usuario | null
 }
 
 // `npm run demo` fuerza el modo demo aunque exista .env (para revisar cambios sin tocar datos reales).

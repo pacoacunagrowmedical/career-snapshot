@@ -1,4 +1,12 @@
-import type { Candidato, Empleo, Puesto, Universidad } from '../types'
+import type { Empleo, Etiqueta, Puesto, Solicitud, Universidad } from '../types'
+
+export type CandidatoDemo = Solicitud & { id: string; creado: Date; etapa?: string; etiquetas?: string[] }
+
+export const ETIQUETAS_DEMO: Etiqueta[] = [
+  { id: 'e-remoto', nombre: 'Remoto', color: 'azul' },
+  { id: 'e-favorito', nombre: 'Favorito', color: 'verde' },
+  { id: 'e-dudas', nombre: 'Con dudas', color: 'amarillo' },
+]
 
 // Datos ficticios para el modo demo. No corresponden a personas reales.
 
@@ -37,9 +45,11 @@ const sinUniversidad: Universidad = {
   financiamiento: [], financiamientoOtro: '', trabajaba: null, destacar: '',
 }
 
-export const CANDIDATOS_DEMO: Candidato[] = [
+export const CANDIDATOS_DEMO: CandidatoDemo[] = [
   {
     id: 'demo-daniela',
+    etapa: 'llamada-filtrado',
+    etiquetas: ['e-dudas'],
     creado: new Date(2026, 7, 13, 19, 24),
     puestoId: 'ejecutivo',
     puestoNombre: 'Ejecutivo de Marketing Digital',
@@ -99,6 +109,8 @@ export const CANDIDATOS_DEMO: Candidato[] = [
   },
   {
     id: 'demo-luis',
+    etapa: 'descartado',
+    etiquetas: [],
     creado: new Date(2026, 8, 22, 11, 5),
     puestoId: 'seo',
     puestoNombre: 'Especialista SEO y Contenidos',
@@ -151,6 +163,8 @@ export const CANDIDATOS_DEMO: Candidato[] = [
   },
   {
     id: 'demo-mariana',
+    etapa: 'entrevista-who',
+    etiquetas: ['e-favorito'],
     creado: new Date(2026, 8, 30, 9, 40),
     puestoId: 'account-manager',
     puestoNombre: 'Account Manager',
@@ -198,6 +212,8 @@ export const CANDIDATOS_DEMO: Candidato[] = [
   },
   {
     id: 'demo-camilo',
+    etapa: 'nuevo',
+    etiquetas: ['e-remoto'],
     creado: new Date(2026, 9, 1, 16, 12),
     puestoId: 'web',
     puestoNombre: 'Diseñador y Administrador Web (WordPress)',

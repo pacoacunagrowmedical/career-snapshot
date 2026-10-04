@@ -1,4 +1,7 @@
-import type { Candidato, Empleo, PeriodoFreelance } from '../types'
+import type { Empleo, PeriodoFreelance, Solicitud } from '../types'
+
+/** Lo mínimo que necesita el análisis: la solicitud y cuándo se envió. */
+type Candidato = Solicitud & { id: string; creado: Date }
 import { indiceMes, duracion, mesCorto, mesDeIndice } from './fechas'
 import { ASPECTOS_CALIFICACION, calificacion, razon } from './catalogos'
 import { dinero } from './formato'

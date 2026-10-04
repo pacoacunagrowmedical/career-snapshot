@@ -81,6 +81,26 @@ export interface Solicitud {
 export interface Candidato extends Solicitud {
   id: string
   creado: Date
+  // Seguimiento del equipo (no lo llena el candidato)
+  etapa: string // id de ETAPAS
+  etiquetas: string[] // ids de Etiqueta
+  numNotas: number
+}
+
+export interface Etiqueta {
+  id: string
+  nombre: string
+  color: string // id de COLORES_ETIQUETA
+}
+
+export interface Nota {
+  id: string
+  tipo: 'nota' | 'cambio' // 'cambio' = registro automático de cambio de etapa
+  texto: string
+  autorEmail: string
+  autorNombre: string
+  creado: Date
+  editado: Date | null
 }
 
 export interface Puesto {
