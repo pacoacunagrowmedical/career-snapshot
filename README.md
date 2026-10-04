@@ -1,5 +1,7 @@
 # Snapshot de Carrera — Grow Medical
 
+En producción: https://career-snapshot.web.app (formulario) · https://career-snapshot.web.app/panel (panel)
+
 Herramienta de reclutamiento inspirada en el *PreScreen Snapshot* de Topgrading.
 
 - **`/`** — Formulario público para candidatos (liga abierta, no indexada).
@@ -32,8 +34,7 @@ npm test   # pruebas de los cálculos (huecos, traslapes, banderas)
 6. **Desplegar**:
 
    ```bash
-   npm install -g firebase-tools
-   firebase login
+   npx firebase login                   # firebase-tools ya viene en devDependencies
    cp .firebaserc.example .firebaserc   # y pon el ID de tu proyecto
    npm run deploy                       # build + hosting + reglas de Firestore
    ```
