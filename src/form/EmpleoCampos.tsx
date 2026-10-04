@@ -147,7 +147,7 @@ export function EmpleoCampos(props: {
             req
             error={err('razonSalida')}
             valor={j.razonSalida}
-            opciones={RAZONES_SALIDA.filter((r) => r.codigo !== 'N').map((r) => ({ valor: r.codigo, etiqueta: r.etiqueta, ayuda: r.ayuda }))}
+            opciones={RAZONES_SALIDA.filter((r) => r.codigo !== 'N' && !r.legado).map((r) => ({ valor: r.codigo, etiqueta: r.etiqueta, ayuda: r.ayuda }))}
             onChange={(v) => set('razonSalida', v)}
           />
           <Campo

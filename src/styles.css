@@ -252,3 +252,4 @@ table.tabla { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .btn-agregar small { display: block; font-weight: 400; color: var(--text-2); font-size: 0.82rem; }
 .btn-agregar.completo { border-style: solid; border-width: 1px; border-color: var(--border-strong); background: var(--surface); color: var(--text-2); }
 .btn-agregar.completo .mas { background: var(--gris); }
+.codigo { min-width: 64px; padding: 0 8px; font-weight: 650; }

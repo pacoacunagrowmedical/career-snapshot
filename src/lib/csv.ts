@@ -1,6 +1,6 @@
 import type { Candidato } from '../types'
 import { analizarSeguro as analizar } from './analisis'
-import { etiquetaFuente } from './catalogos'
+import { calificacion, etiquetaFuente, razon } from './catalogos'
 
 const celda = (v: unknown) => {
   const s = v === null || v === undefined ? '' : String(v)
@@ -24,7 +24,8 @@ export function candidatosACsv(cs: Candidato[], sueldos: Map<string, number | nu
     for (const t of a.empleos) {
       const e = t.empleo
       filas.push([...comun, t.numero, e.empresa, e.puestoInicial, e.puestoFinal, e.ascensos, e.inicio, e.actual ? 'Actual' : e.fin,
-        e.sueldoInicial, e.sueldoFinal, e.razonSalida, e.calificacion.general, e.calificacion.resultados, e.calificacion.trato, e.contactoJefe,
+        e.sueldoInicial, e.sueldoFinal, razon(e.razonSalida).corto, calificacion(e.calificacion.general).corto,
+        calificacion(e.calificacion.resultados).corto, calificacion(e.calificacion.trato).corto, e.contactoJefe,
       ].map(celda).join(','))
     }
   }

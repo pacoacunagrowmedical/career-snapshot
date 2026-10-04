@@ -84,14 +84,14 @@ export function SnapshotChart({ a, moneda, sueldoEsperado, sueldoOfrecido }: Pro
       etiqueta: 'Razón de salida',
       render: (top) => a.empleos.map((t) => {
         const r = razon(t.empleo.razonSalida)
-        return <Celda key={t.numero} t={t} top={top} x={x} fill={SEM[r.semaforo]} texto={r.codigo} tinta={TEXTO_SEM[r.semaforo]} negrita />
+        return <Celda key={t.numero} t={t} top={top} x={x} fill={SEM[r.semaforo]} texto={r.corto} titulo={r.etiqueta} tinta={TEXTO_SEM[r.semaforo]} negrita />
       }),
     },
     ...ASPECTOS_CALIFICACION.map((asp) => ({
       etiqueta: asp.etiqueta,
       render: (top: number) => a.empleos.map((t) => {
         const c = calificacion(t.empleo.calificacion[asp.clave])
-        return <Celda key={t.numero} t={t} top={top} x={x} fill={SEM[c.semaforo]} texto={String(c.valor)} tinta={TEXTO_SEM[c.semaforo]} negrita />
+        return <Celda key={t.numero} t={t} top={top} x={x} fill={SEM[c.semaforo]} texto={c.corto} titulo={`${c.etiqueta} (${c.valor})`} tinta={TEXTO_SEM[c.semaforo]} negrita />
       }),
     })),
     {
@@ -274,8 +274,8 @@ export function SnapshotChart({ a, moneda, sueldoEsperado, sueldoOfrecido }: Pro
         <div className="leyenda">
           <h4>Razón de salida</h4>
           <ul>
-            {RAZONES_SALIDA.map((r) => (
-              <li key={r.codigo}><span className={`codigo sem-${r.semaforo}`}>{r.codigo}</span> {r.etiqueta}</li>
+            {RAZONES_SALIDA.filter((r) => !r.legado).map((r) => (
+              <li key={r.codigo}><span className={`codigo sem-${r.semaforo}`}>{r.corto}</span> {r.etiqueta}</li>
             ))}
           </ul>
         </div>
@@ -283,7 +283,7 @@ export function SnapshotChart({ a, moneda, sueldoEsperado, sueldoOfrecido }: Pro
           <h4>Calificación del jefe</h4>
           <ul>
             {CALIFICACIONES.map((c) => (
-              <li key={String(c.valor)}><span className={`codigo sem-${c.semaforo}`}>{c.valor}</span> {c.etiqueta}</li>
+              <li key={String(c.valor)}><span className={`codigo sem-${c.semaforo}`}>{c.corto}</span> {c.valor === 'I' ? 'No hay quien pueda opinar' : `${c.valor} de 5`}</li>
             ))}
           </ul>
         </div>
@@ -304,16 +304,20 @@ function LineaRef({ y, etiqueta, color, punteada, lado }: { y: number; etiqueta:
   )
 }
 
-function Celda(props: { t: TramoEmpleo; top: number; x: (m: number) => number; fill: string; texto: string; tinta: string; negrita?: boolean }) {
+function Celda(props: { t: TramoEmpleo; top: number; x: (m: number) => number; fill: string; texto: string; titulo?: string; tinta: string; negrita?: boolean }) {
   const x0 = props.x(props.t.desde) + 1
   const w = Math.max(2, props.x(props.t.hasta) - props.x(props.t.desde) - 2)
-  const cabe = props.negrita ? w > 18 : w > 40
+  // Celdas de estado (negrita): la palabra completa si cabe; si no, su inicial. El nombre completo va en el tooltip.
+  let texto: string | null
+  if (props.negrita) texto = props.texto.length * 7.6 + 12 <= w ? props.texto : w > 18 ? props.texto[0] : null
+  else texto = w > 40 ? recortar(props.texto, w / 7.2) : null
   return (
     <g>
+      <title>{props.titulo ?? props.texto}</title>
       <rect x={x0} y={props.top} width={w} height={FILA} rx={4} fill={props.fill} />
-      {cabe && (
-        <text x={x0 + w / 2} y={props.top + FILA / 2 + 4} textAnchor="middle" fontSize={props.negrita ? 13 : 12} fontWeight={props.negrita ? 700 : 500} fill={props.tinta}>
-          {recortar(props.texto, w / 7.2)}
+      {texto && (
+        <text x={x0 + w / 2} y={props.top + FILA / 2 + 4} textAnchor="middle" fontSize={props.negrita ? 12.5 : 12} fontWeight={props.negrita ? 650 : 500} fill={props.tinta}>
+          {texto}
         </text>
       )}
     </g>

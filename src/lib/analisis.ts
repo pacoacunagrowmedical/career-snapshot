@@ -170,8 +170,8 @@ export function analizar(c: Candidato, sueldoOfrecido: number | null): Analisis 
 
   for (const t of empleos) {
     const r = razon(t.empleo.razonSalida)
-    if (r.semaforo === 'rojo') banderas.push({ nivel: 'rojo', texto: `${r.etiqueta} en ${t.empleo.empresa}` })
-    else if (r.semaforo === 'amarillo') banderas.push({ nivel: 'amarillo', texto: `${r.etiqueta} en ${t.empleo.empresa}` })
+    if (r.semaforo === 'rojo') banderas.push({ nivel: 'rojo', texto: `${r.frase} en ${t.empleo.empresa}` })
+    else if (r.semaforo === 'amarillo') banderas.push({ nivel: 'amarillo', texto: `${r.frase} en ${t.empleo.empresa}` })
   }
 
   for (const t of empleos) {

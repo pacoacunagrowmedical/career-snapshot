@@ -170,7 +170,7 @@ export function PerfilPage() {
                       const cal = calificacion(e.calificacion[k])
                       return (
                         <span key={k} className="row" style={{ gap: 4 }}>
-                          <span className={`codigo sem-${cal.semaforo}`}>{cal.valor}</span>
+                          <span className={`codigo sem-${cal.semaforo}`}>{cal.corto}</span>
                           <span className="small">{k === 'general' ? 'General' : k === 'resultados' ? 'Resultados' : 'Trato'}</span>
                         </span>
                       )
@@ -179,7 +179,7 @@ export function PerfilPage() {
                 </dd>
                 <dt>Razón de salida</dt>
                 <dd>
-                  <span className={`codigo sem-${r.semaforo}`}>{r.codigo}</span> {r.etiqueta}
+                  <span className={`codigo sem-${r.semaforo}`}>{r.corto}</span>
                   {e.razonDetalle && <div className="muted">“{e.razonDetalle}”</div>}
                 </dd>
                 <dt>Prestaciones</dt>

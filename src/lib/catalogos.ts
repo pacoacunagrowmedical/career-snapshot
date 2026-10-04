@@ -2,25 +2,29 @@ import type { Calificacion, CodigoSalida, ContactoJefe, Prestaciones } from '../
 
 export type Semaforo = 'verde' | 'amarillo' | 'rojo' | 'gris'
 
-export const RAZONES_SALIDA: { codigo: CodigoSalida; etiqueta: string; ayuda: string; semaforo: Semaforo }[] = [
-  { codigo: 'M', etiqueta: 'Decisión propia', ayuda: 'Renuncié por mi cuenta (mejor oferta, cambio de rumbo, etc.)', semaforo: 'verde' },
-  { codigo: 'N', etiqueta: 'No he dejado este empleo', ayuda: 'Sigo trabajando aquí', semaforo: 'verde' },
-  { codigo: 'B', etiqueta: 'Liquidación voluntaria', ayuda: 'La empresa ofreció un paquete de salida y lo acepté', semaforo: 'verde' },
-  { codigo: 'P', etiqueta: 'Ascenso o transferencia', ayuda: 'Me promovieron o transfirieron a otra empresa del mismo grupo', semaforo: 'verde' },
-  { codigo: 'LM', etiqueta: 'Movimiento lateral', ayuda: 'Me cambié a un puesto equivalente en otra empresa del grupo', semaforo: 'verde' },
-  { codigo: 'L', etiqueta: 'Recorte de personal', ayuda: 'Eliminaron mi puesto o hubo despidos masivos', semaforo: 'amarillo' },
-  { codigo: 'D', etiqueta: 'Acuerdo mutuo', ayuda: 'La empresa y yo acordamos terminar la relación', semaforo: 'amarillo' },
-  { codigo: 'O', etiqueta: 'Otras circunstancias', ayuda: 'Mudanza, salud, cierre de la empresa, etc.', semaforo: 'amarillo' },
-  { codigo: 'T', etiqueta: 'Despido', ayuda: 'La empresa decidió terminar mi contrato', semaforo: 'rojo' },
+// El código es lo que se guarda en la base de datos; `corto` es lo que se lee en el snapshot.
+// B, P y LM ya no se ofrecen (no aplican o se prestaban a confusión), pero se conservan para leer datos viejos.
+export interface RazonSalida { codigo: CodigoSalida; etiqueta: string; corto: string; frase: string; ayuda: string; semaforo: Semaforo; legado?: boolean }
+
+export const RAZONES_SALIDA: RazonSalida[] = [
+  { codigo: 'M', etiqueta: 'Renuncié (decisión propia)', corto: 'Renuncia', frase: 'Renuncia', ayuda: 'Me fui por mi cuenta: mejor oferta, cambio de rumbo, etc.', semaforo: 'verde' },
+  { codigo: 'N', etiqueta: 'Sigo trabajando aquí', corto: 'Actual', frase: 'Sigue', ayuda: '', semaforo: 'verde' },
+  { codigo: 'L', etiqueta: 'Recorte de personal', corto: 'Recorte', frase: 'Recorte de personal', ayuda: 'Eliminaron mi puesto o hubo despidos masivos', semaforo: 'amarillo' },
+  { codigo: 'D', etiqueta: 'Acuerdo mutuo', corto: 'Acuerdo', frase: 'Salida por acuerdo mutuo', ayuda: 'La empresa y yo acordamos terminar la relación', semaforo: 'amarillo' },
+  { codigo: 'O', etiqueta: 'Otras circunstancias', corto: 'Otra', frase: 'Salida por otras circunstancias', ayuda: 'Mudanza, salud, cierre de la empresa, etc.', semaforo: 'amarillo' },
+  { codigo: 'T', etiqueta: 'Me despidieron', corto: 'Despido', frase: 'Despido', ayuda: 'La empresa decidió terminar mi relación laboral', semaforo: 'rojo' },
+  { codigo: 'B', etiqueta: 'Liquidación', corto: 'Liquidación', frase: 'Salida con liquidación', ayuda: '', semaforo: 'amarillo', legado: true },
+  { codigo: 'P', etiqueta: 'Ascenso o transferencia', corto: 'Ascenso', frase: 'Ascenso', ayuda: '', semaforo: 'verde', legado: true },
+  { codigo: 'LM', etiqueta: 'Movimiento lateral', corto: 'Lateral', frase: 'Movimiento lateral', ayuda: '', semaforo: 'verde', legado: true },
 ]
 
-export const CALIFICACIONES: { valor: Calificacion; etiqueta: string; semaforo: Semaforo }[] = [
-  { valor: 5, etiqueta: 'Excelente', semaforo: 'verde' },
-  { valor: 4, etiqueta: 'Muy bueno', semaforo: 'verde' },
-  { valor: 3, etiqueta: 'Bueno', semaforo: 'amarillo' },
-  { valor: 2, etiqueta: 'Regular', semaforo: 'rojo' },
-  { valor: 1, etiqueta: 'Malo', semaforo: 'rojo' },
-  { valor: 'I', etiqueta: 'Imposible de dar', semaforo: 'gris' },
+export const CALIFICACIONES: { valor: Calificacion; etiqueta: string; corto: string; semaforo: Semaforo }[] = [
+  { valor: 5, etiqueta: 'Excelente', corto: 'Excelente', semaforo: 'verde' },
+  { valor: 4, etiqueta: 'Muy bueno', corto: 'Muy bueno', semaforo: 'verde' },
+  { valor: 3, etiqueta: 'Bueno', corto: 'Bueno', semaforo: 'amarillo' },
+  { valor: 2, etiqueta: 'Regular', corto: 'Regular', semaforo: 'rojo' },
+  { valor: 1, etiqueta: 'Malo', corto: 'Malo', semaforo: 'rojo' },
+  { valor: 'I', etiqueta: 'Imposible de dar', corto: 'Imposible', semaforo: 'gris' },
 ]
 
 export const ASPECTOS_CALIFICACION = [
@@ -68,11 +72,11 @@ export const MESES_LARGOS = [
 
 // Si llega un valor desconocido (dato corrupto o enviado fuera del formulario) se muestra en gris en vez de romper la vista.
 export function razon(codigo: CodigoSalida) {
-  return RAZONES_SALIDA.find((r) => r.codigo === codigo) ?? { codigo: '?' as CodigoSalida, etiqueta: 'Sin dato', ayuda: '', semaforo: 'gris' as Semaforo }
+  return RAZONES_SALIDA.find((r) => r.codigo === codigo) ?? { codigo: '?' as CodigoSalida, etiqueta: 'Sin dato', corto: 'Sin dato', frase: 'Salida sin dato', ayuda: '', semaforo: 'gris' as Semaforo }
 }
 
 export function calificacion(valor: Calificacion) {
-  return CALIFICACIONES.find((c) => c.valor === valor) ?? { valor: '?' as unknown as Calificacion, etiqueta: 'Sin dato', semaforo: 'gris' as Semaforo }
+  return CALIFICACIONES.find((c) => c.valor === valor) ?? { valor: '?' as unknown as Calificacion, etiqueta: 'Sin dato', corto: 'Sin dato', semaforo: 'gris' as Semaforo }
 }
 
 export function etiquetaFuente(valor: string) {

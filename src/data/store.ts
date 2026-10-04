@@ -24,7 +24,8 @@ export interface Store {
   borrarCandidatos(ids: string[]): Promise<void>
 }
 
-export const firebaseConfigurado = Boolean(import.meta.env.VITE_FIREBASE_API_KEY)
+// `npm run demo` fuerza el modo demo aunque exista .env (para revisar cambios sin tocar datos reales).
+export const firebaseConfigurado = Boolean(import.meta.env.VITE_FIREBASE_API_KEY) && import.meta.env.MODE !== 'demo'
 export const DOMINIO_PERMITIDO = (import.meta.env.VITE_ALLOWED_DOMAIN as string | undefined) || 'growmedical.org'
 
 let instancia: Promise<Store> | null = null
