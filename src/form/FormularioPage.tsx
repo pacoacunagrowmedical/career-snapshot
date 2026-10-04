@@ -141,7 +141,7 @@ export function FormularioPage() {
             <div className="stack-sm">
               <h2>¡Gracias por tu interés!</h2>
               <p className="muted">
-                Este formulario nos ayuda a conocer tu trayectoria. Toma entre 15 y 30 minutos. Tus respuestas se guardan en este
+                Este formulario nos ayuda a conocer tu trayectoria. Toma aproximadamente 15 minutos. Tus respuestas se guardan en este
                 navegador mientras avanzas, así que puedes cerrar y regresar después.
               </p>
             </div>
