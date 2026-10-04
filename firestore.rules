@@ -1,0 +1,54 @@
+rules_version = '2';
+
+// Si cambias el dominio permitido (VITE_ALLOWED_DOMAIN), cámbialo también aquí.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function esEquipo() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.matches('.*@growmedical[.]org$');
+    }
+
+    function texto(v, max) {
+      return v is string && v.size() <= max;
+    }
+
+    // Validación básica de una solicitud nueva (el formulario hace la validación detallada).
+    function solicitudValida(d) {
+      return d.keys().hasOnly([
+          'puestoId', 'puestoNombre', 'fuente', 'fuenteDetalle', 'nombre', 'fechaNacimiento', 'pais',
+          'direccion', 'email', 'telefono', 'moneda', 'sueldoEsperado', 'empleos', 'freelance',
+          'universidad', 'fortalezas', 'debilidades', 'objetivos', 'avisoPrivacidad', 'creado'])
+        && texto(d.nombre, 200) && d.nombre.size() > 1
+        && texto(d.email, 200) && d.email.matches('.+@.+[.].+')
+        && texto(d.telefono, 30)
+        && texto(d.puestoId, 100)
+        && d.sueldoEsperado is number
+        && d.empleos is list && d.empleos.size() <= 25
+        && d.freelance is list && d.freelance.size() <= 15
+        && d.universidad is map
+        && texto(d.fortalezas, 5000) && texto(d.debilidades, 5000) && texto(d.objetivos, 5000)
+        && d.avisoPrivacidad == true
+        && d.creado == request.time;
+    }
+
+    // Candidatos: cualquiera puede ENVIAR una solicitud; solo el equipo puede leer o borrar.
+    match /candidatos/{id} {
+      allow create: if solicitudValida(request.resource.data);
+      allow read, delete: if esEquipo();
+      allow update: if false;
+    }
+
+    // Puestos: el nombre es público (el formulario lo necesita); editar es del equipo.
+    match /puestos/{id} {
+      allow read: if true;
+      allow write: if esEquipo();
+    }
+
+    // Sueldo ofrecido por puesto: privado.
+    match /puestosPrivado/{id} {
+      allow read, write: if esEquipo();
+    }
+  }
+}
