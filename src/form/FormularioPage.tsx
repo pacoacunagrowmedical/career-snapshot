@@ -181,7 +181,7 @@ export function FormularioPage() {
           <>
             <h2>Información personal y de contacto</h2>
             <Campo label="Nombre completo" req error={err('nombre')}>
-              {(id) => <input id={id} className="input" autoComplete="name" value={b.nombre} onChange={(e) => set('nombre', e.target.value)} />}
+              {(id) => <input id={id} className="input" autoComplete="name" maxLength={200} value={b.nombre} onChange={(e) => set('nombre', e.target.value)} />}
             </Campo>
             <div className="grid-2">
               <Campo label="Fecha de nacimiento" req error={err('fechaNacimiento')}>
@@ -201,10 +201,10 @@ export function FormularioPage() {
             </Campo>
             <div className="grid-2">
               <Campo label="Correo electrónico" req error={err('email')}>
-                {(id) => <input id={id} type="email" className="input" autoComplete="email" value={b.email} onChange={(e) => set('email', e.target.value)} />}
+                {(id) => <input id={id} type="email" className="input" autoComplete="email" maxLength={200} value={b.email} onChange={(e) => set('email', e.target.value)} />}
               </Campo>
               <Campo label="Teléfono celular" req ayuda={esMexico(b.pais) ? '10 dígitos.' : 'Incluye la lada de tu país.'} error={err('telefono')}>
-                {(id) => <input id={id} type="tel" className="input tabular" autoComplete="tel" value={b.telefono} onChange={(e) => set('telefono', e.target.value)} />}
+                {(id) => <input id={id} type="tel" className="input tabular" autoComplete="tel" maxLength={30} value={b.telefono} onChange={(e) => set('telefono', e.target.value)} />}
               </Campo>
             </div>
             <hr className="separador" />
@@ -433,10 +433,10 @@ export function FormularioPage() {
           <>
             <h2>Fortalezas y debilidades</h2>
             <Campo label="¿Qué habilidades y fortalezas tienes que te ayudarán a tener éxito en el puesto al que aplicas en Grow Medical?" req error={err('fortalezas')}>
-              {(id) => <textarea id={id} className="textarea" value={b.fortalezas} onChange={(e) => set('fortalezas', e.target.value)} />}
+              {(id) => <textarea id={id} className="textarea" maxLength={5000} value={b.fortalezas} onChange={(e) => set('fortalezas', e.target.value)} />}
             </Campo>
             <Campo label="¿Cuáles son tus debilidades o áreas de oportunidad?" req error={err('debilidades')}>
-              {(id) => <textarea id={id} className="textarea" value={b.debilidades} onChange={(e) => set('debilidades', e.target.value)} />}
+              {(id) => <textarea id={id} className="textarea" maxLength={5000} value={b.debilidades} onChange={(e) => set('debilidades', e.target.value)} />}
             </Campo>
           </>
         )}
@@ -448,7 +448,7 @@ export function FormularioPage() {
               <p className="muted">Ya casi terminamos. Te recomendamos regresar a los pasos anteriores para revisar que todo esté correcto.</p>
             </div>
             <Campo label="¿Cuáles son tus objetivos profesionales?" req error={err('objetivos')}>
-              {(id) => <textarea id={id} className="textarea" value={b.objetivos} onChange={(e) => set('objetivos', e.target.value)} />}
+              {(id) => <textarea id={id} className="textarea" maxLength={5000} value={b.objetivos} onChange={(e) => set('objetivos', e.target.value)} />}
             </Campo>
             <div className={`campo${err('avisoPrivacidad') ? ' con-error' : ''}`}>
               <label className="check">
