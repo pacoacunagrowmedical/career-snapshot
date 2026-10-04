@@ -248,8 +248,9 @@ export function FormularioPage() {
             <div className="stack-sm">
               <h2>Tus empleos</h2>
               <p className="muted">
-                Empieza por tu empleo actual o el más reciente y agrega los anteriores, hasta 5 o más si los tienes. Llena todas las
-                preguntas de cada empleo. No incluyas trabajo freelance; eso va en el siguiente paso.
+                Agrega tus <b>últimos cinco empleos</b> (si no has tenido cinco empleos, introduce los que hayas tenido), empezando
+                por el actual o el más reciente. Incluye también los que duraron poco. Llena todas las preguntas de cada empleo. No
+                incluyas trabajo freelance; eso va en el siguiente paso.
               </p>
             </div>
             {err('empleos') && <div className="error">{err('empleos')}</div>}
@@ -300,7 +301,7 @@ export function FormularioPage() {
             {avisos.unicoEmpleo && <div className="aviso-campo" role="status">{avisos.unicoEmpleo}</div>}
             <button
               type="button"
-              className="btn btn-agregar"
+              className={`btn btn-agregar${b.empleos.length >= 5 ? ' completo' : ''}`}
               onClick={() => {
                 set('empleos', [...b.empleos, empleoVacio()])
                 setAbierto(b.empleos.length)
@@ -310,7 +311,11 @@ export function FormularioPage() {
               <span className="mas">+</span>
               <span>
                 Agregar otro empleo
-                <small>Agrega cada empleo que hayas tenido, del más reciente al más antiguo</small>
+                <small>
+                  {b.empleos.length >= 5
+                    ? 'Ya agregaste cinco empleos, pero puedes agregar más si lo deseas'
+                    : `Llevas ${b.empleos.length} de 5. Agrégalos del más reciente al más antiguo`}
+                </small>
               </span>
             </button>
           </>
