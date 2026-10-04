@@ -115,6 +115,12 @@ export function crearLocalStore(): Store {
       return c ? aCandidato(c) : null
     },
 
+    async importarCandidatos(cs) {
+      const d = leer()
+      cs.forEach((c, i) => d.candidatos.push({ ...c, id: `imp-${Date.now()}-${i}`, creado: c.creado.toISOString() }))
+      escribir(d)
+    },
+
     async borrarCandidatos(ids) {
       const d = leer()
       const set = new Set(ids)

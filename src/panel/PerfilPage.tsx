@@ -46,6 +46,12 @@ export function PerfilPage() {
         <div style={{ flex: 1, minWidth: 260 }}>
           <h1>{c.nombre}</h1>
           <div style={{ marginTop: 2 }}>Aplica a <b>{c.puestoNombre}</b> · {fechaCorta(c.creado)}</div>
+          {c.origen === 'formulario-anterior' && (
+            <div className="aviso small" style={{ marginTop: 8 }}>
+              Importado del formulario anterior. No incluye fuente, sueldo esperado ni las calificaciones de resultados y trato con la gente
+              (aparecen como “Sin dato”). La calificación del jefe se convirtió de la escala 1–10 a 1–5.
+            </div>
+          )}
           <div className="datos">
             <span>{c.email}</span>
             <span className="tabular">{c.telefono}</span>
@@ -78,7 +84,7 @@ export function PerfilPage() {
         <div className="snapshot-titulo">
           <h2>Snapshot de carrera</h2>
           <span className="muted small">
-            Espera {dinero(c.sueldoEsperado, c.moneda)} al mes
+            {c.sueldoEsperado > 0 ? `Espera ${dinero(c.sueldoEsperado, c.moneda)} al mes` : 'Sueldo esperado: sin dato'}
             {ofrecido ? ` · Ofrecemos ${dinero(ofrecido)}` : ''}
           </span>
         </div>
@@ -205,7 +211,8 @@ export function PerfilPage() {
               {c.freelance.length
                 ? c.freelance.map((f, i) => (
                     <div key={i} style={{ marginBottom: 6 }}>
-                      <b>{f.actividad}</b> · {mesCorto(f.inicio)} – {f.actual ? 'actual' : f.fin ? mesCorto(f.fin) : '?'}
+                      <b>{f.actividad}</b>
+                      {f.inicio && <> · {mesCorto(f.inicio)} – {f.actual ? 'actual' : f.fin ? mesCorto(f.fin) : '?'}</>}
                       {f.descripcion && <div className="muted">{f.descripcion}</div>}
                     </div>
                   ))

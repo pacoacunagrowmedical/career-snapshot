@@ -6,3 +6,4 @@ dist
 *.log
 *.tsbuildinfo
 .firebaserc
+*.local.test.ts

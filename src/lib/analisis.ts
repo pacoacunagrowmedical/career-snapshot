@@ -144,7 +144,7 @@ export function analizar(c: Candidato, sueldoOfrecido: number | null): Analisis 
   const crecimientoSueldo = sueldoPrimero && sueldoUltimo ? sueldoUltimo / sueldoPrimero - 1 : null
 
   const referenciasVerificables = empleos.filter(
-    (t) => t.empleo.contactoJefe === 'si' && t.empleo.calificacion.general !== 'I',
+    (t) => t.empleo.contactoJefe === 'si' && t.empleo.calificacion.general !== 'I' && t.empleo.calificacion.general !== null,
   ).length
 
   // ——— Banderas ———

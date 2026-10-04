@@ -22,6 +22,7 @@ export interface Store {
   candidatos(): Promise<Candidato[]>
   candidato(id: string): Promise<Candidato | null>
   borrarCandidatos(ids: string[]): Promise<void>
+  importarCandidatos(cs: (Solicitud & { creado: Date })[]): Promise<void>
 }
 
 // `npm run demo` fuerza el modo demo aunque exista .env (para revisar cambios sin tocar datos reales).

@@ -102,6 +102,17 @@ export function crearFirebaseStore(): Store {
       return d.exists() ? aCandidato(d.id, d.data()) : null
     },
 
+    async importarCandidatos(cs) {
+      for (let i = 0; i < cs.length; i += 400) {
+        const batch = writeBatch(db)
+        for (const { creado, ...c } of cs.slice(i, i + 400)) {
+          // JSON elimina los campos `undefined`, que Firestore no acepta.
+          batch.set(doc(collection(db, 'candidatos')), { ...JSON.parse(JSON.stringify(c)), creado: Timestamp.fromDate(creado) })
+        }
+        await batch.commit()
+      }
+    },
+
     async borrarCandidatos(ids) {
       for (let i = 0; i < ids.length; i += 400) {
         const batch = writeBatch(db)

@@ -56,6 +56,7 @@ export function PanelLayout() {
           <nav>
             <NavLink to="/panel" end>Candidatos</NavLink>
             <NavLink to="/panel/puestos">Puestos</NavLink>
+            <NavLink to="/panel/importar">Importar</NavLink>
           </nav>
           <div className="spacer" />
           <span className="muted small">{usuario.email}</span>

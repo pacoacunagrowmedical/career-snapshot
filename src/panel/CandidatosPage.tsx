@@ -120,7 +120,10 @@ export function CandidatosPage() {
                     </td>
                     <td>
                       <Link className="nombre" to={`/panel/candidato/${c.id}`}>{c.nombre}</Link>
-                      <div className="muted small">{etiquetaFuente(c.fuente)}{c.pais && c.pais !== 'México' ? ` · ${c.pais}` : ''}</div>
+                      <div className="muted small">
+                        {c.origen === 'formulario-anterior' ? 'Formulario anterior' : etiquetaFuente(c.fuente)}
+                        {c.pais && c.pais !== 'México' ? ` · ${c.pais}` : ''}
+                      </div>
                     </td>
                     <td>{c.puestoNombre}</td>
                     <td className="tabular" style={{ whiteSpace: 'nowrap' }}>{fechaCorta(c.creado)}</td>

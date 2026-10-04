@@ -12,6 +12,13 @@ const tintaEmpleo = (n: number) => ([3, 4, 5].includes(((n - 1) % 8) + 1) ? '#10
 const SEM: Record<Semaforo, string> = { verde: 'var(--verde)', amarillo: 'var(--amarillo)', rojo: 'var(--rojo)', gris: 'var(--gris)' }
 const TEXTO_SEM: Record<Semaforo, string> = { verde: '#fff', amarillo: '#10201b', rojo: '#fff', gris: '#fff' }
 
+/** Si falta uno de los dos sueldos (dato viejo o "N/A"), se usa el otro para no dibujar una caída falsa a cero. */
+const sueldos = (t: TramoEmpleo) => {
+  const i = t.empleo.sueldoInicial || t.empleo.sueldoFinal
+  const f = t.empleo.sueldoFinal || t.empleo.sueldoInicial
+  return { i, f, hay: i > 0 }
+}
+
 const W = 1000
 const IZQ = 150 // ancho de etiquetas de filas
 const DER = 16
@@ -140,7 +147,8 @@ export function SnapshotChart({ a, moneda, sueldoEsperado, sueldoOfrecido }: Pro
 
   const sueldoEn = (t: TramoEmpleo, m: number) => {
     const f = t.meses ? Math.min(1, Math.max(0, (m - t.desde) / t.meses)) : 0
-    return t.empleo.sueldoInicial + (t.empleo.sueldoFinal - t.empleo.sueldoInicial) * f
+    const s = sueldos(t)
+    return s.i + (s.f - s.i) * f
   }
 
   return (
@@ -179,10 +187,12 @@ export function SnapshotChart({ a, moneda, sueldoEsperado, sueldoOfrecido }: Pro
 
         {/* Áreas de sueldo por empleo */}
         {a.empleos.map((t) => {
+          const s = sueldos(t)
+          if (!s.hay) return null // sin sueldo: el empleo aparece en las filas, pero no en la gráfica
           const x0 = x(t.desde)
           const x1 = Math.max(x0 + 2, x(t.hasta))
-          const y0 = y(t.empleo.sueldoInicial)
-          const y1 = y(t.empleo.sueldoFinal)
+          const y0 = y(s.i)
+          const y1 = y(s.f)
           const c = colorEmpleo(t.numero)
           return (
             <g key={t.numero}>
@@ -242,7 +252,7 @@ export function SnapshotChart({ a, moneda, sueldoEsperado, sueldoOfrecido }: Pro
             <div key={t.numero} style={{ marginBottom: 6 }}>
               <div className="t-row">
                 <span className="t-key" style={{ background: colorEmpleo(t.numero) }} />
-                <span className="t-val tabular">{dinero(Math.round(sueldoEn(t, hover.x) / 100) * 100, moneda)}</span>
+                <span className="t-val tabular">{sueldos(t).hay ? dinero(Math.round(sueldoEn(t, hover.x) / 100) * 100, moneda) : 'Sueldo sin dato'}</span>
               </div>
               <div>{t.empleo.empresa}</div>
               <div className="muted small">{t.empleo.puestoFinal} · {duracion(t.meses)}</div>

@@ -75,10 +75,11 @@ export function razon(codigo: CodigoSalida) {
   return RAZONES_SALIDA.find((r) => r.codigo === codigo) ?? { codigo: '?' as CodigoSalida, etiqueta: 'Sin dato', corto: 'Sin dato', frase: 'Salida sin dato', ayuda: '', semaforo: 'gris' as Semaforo }
 }
 
-export function calificacion(valor: Calificacion) {
+export function calificacion(valor: Calificacion | null) {
   return CALIFICACIONES.find((c) => c.valor === valor) ?? { valor: '?' as unknown as Calificacion, etiqueta: 'Sin dato', corto: 'Sin dato', semaforo: 'gris' as Semaforo }
 }
 
 export function etiquetaFuente(valor: string) {
+  if (!valor) return 'Sin dato'
   return FUENTES.find((f) => f.valor === valor)?.etiqueta ?? valor
 }

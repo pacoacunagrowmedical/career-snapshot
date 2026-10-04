@@ -28,9 +28,9 @@ function empleo(raw: unknown): Empleo {
     jefeNombre: txt(e.jefeNombre),
     jefePuesto: txt(e.jefePuesto),
     calificacion: {
-      general: (cal.general ?? 'I') as Empleo['calificacion']['general'],
-      resultados: (cal.resultados ?? 'I') as Empleo['calificacion']['resultados'],
-      trato: (cal.trato ?? 'I') as Empleo['calificacion']['trato'],
+      general: (cal.general ?? null) as Empleo['calificacion']['general'],
+      resultados: (cal.resultados ?? null) as Empleo['calificacion']['resultados'],
+      trato: (cal.trato ?? null) as Empleo['calificacion']['trato'],
     },
     logro: txt(e.logro),
     disfrutabaMas: txt(e.disfrutabaMas),
@@ -87,5 +87,7 @@ export function normalizarCandidato(id: string, raw: Record<string, unknown>, cr
     objetivos: txt(raw.objetivos),
     avisoPrivacidad: bool(raw.avisoPrivacidad),
     posibleBot: bool(raw.posibleBot),
+    origen: raw.origen === 'formulario-anterior' ? 'formulario-anterior' : undefined,
+    claveImportacion: txt(raw.claveImportacion) || undefined,
   }
 }

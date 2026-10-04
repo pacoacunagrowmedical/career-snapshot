@@ -22,7 +22,8 @@ export interface Empleo {
   prestaciones: Prestaciones
   jefeNombre: string
   jefePuesto: string
-  calificacion: { general: Calificacion; resultados: Calificacion; trato: Calificacion }
+  // null = sin dato (p. ej. solicitudes importadas del formulario anterior, que solo tenía una calificación)
+  calificacion: { general: Calificacion | null; resultados: Calificacion | null; trato: Calificacion | null }
   logro: string
   disfrutabaMas: string
   disfrutabaMenos: string
@@ -73,6 +74,8 @@ export interface Solicitud {
   objetivos: string
   avisoPrivacidad: boolean
   posibleBot?: boolean // lo marcó el filtro contra bots; se guarda igual para no perder candidatos reales
+  origen?: 'formulario-anterior' // importada del Google Form v3.2
+  claveImportacion?: string // evita importar dos veces la misma respuesta
 }
 
 export interface Candidato extends Solicitud {

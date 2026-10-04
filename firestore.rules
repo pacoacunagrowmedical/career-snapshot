@@ -35,7 +35,8 @@ service cloud.firestore {
 
     // Candidatos: cualquiera puede ENVIAR una solicitud; solo el equipo puede leer o borrar.
     match /candidatos/{id} {
-      allow create: if solicitudValida(request.resource.data);
+      // El equipo además puede crear registros directamente (importación desde el formulario anterior).
+      allow create: if solicitudValida(request.resource.data) || esEquipo();
       allow read, delete: if esEquipo();
       allow update: if false;
     }
