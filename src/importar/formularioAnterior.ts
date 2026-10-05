@@ -33,6 +33,7 @@ export function leerCsv(texto: string): string[][] {
   let campo = ''
   let comillas = false
   const t = texto.replace(/^﻿/, '')
+  const sep = separador(t)
   for (let i = 0; i < t.length; i++) {
     const ch = t[i]
     if (comillas) {
@@ -42,7 +43,7 @@ export function leerCsv(texto: string): string[][] {
       } else if (ch === '"') comillas = false
       else campo += ch
     } else if (ch === '"') comillas = true
-    else if (ch === ',') {
+    else if (ch === sep) {
       fila.push(campo)
       campo = ''
     } else if (ch === '\n' || ch === '\r') {
@@ -61,7 +62,28 @@ export function leerCsv(texto: string): string[][] {
 }
 
 /** "dd/mm/aa" o "dd/mm/aaaa" (con hora opcional) → Date. Años de 2 dígitos: hasta el año actual son 20xx, después 19xx. */
-function leerFecha(s: string): Date | null {
+/**
+ * Google Sheets separa con comas; Excel en español guarda con punto y coma. Se elige el separador que más aparece
+ * en la primera línea (fuera de comillas).
+ */
+function separador(t: string): string {
+  let comillas = false
+  const cuenta: Record<string, number> = { ',': 0, ';': 0, '\t': 0 }
+  for (const ch of t) {
+    if (ch === '"') comillas = !comillas
+    else if (!comillas && (ch === '\n' || ch === '\r')) break
+    else if (!comillas && ch in cuenta) cuenta[ch]++
+  }
+  return Object.entries(cuenta).sort((a, b) => b[1] - a[1])[0][0]
+}
+
+export function leerFecha(s: string): Date | null {
+  // Excel a veces la deja como "2026-10-03 12:31:00"
+  const iso = s.trim().match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/)
+  if (iso) {
+    const d = new Date(+iso[1], +iso[2] - 1, +iso[3], +(iso[4] ?? 0), +(iso[5] ?? 0), +(iso[6] ?? 0))
+    return Number.isNaN(d.getTime()) ? null : d
+  }
   const m = s.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/)
   if (!m) return null
   let anio = Number(m[3])
@@ -127,6 +149,27 @@ const ENCABEZADOS_ESPERADOS: [number, RegExp][] = [
   [0, /marca temporal/i], [1, /posici[oó]n/i], [2, /nombre completo/i], [6, /correo/i], [8, /nombre de la empresa/i],
   [25, /nombre de la empresa/i], [89, /universidad/i], [97, /fortalezas/i], [99, /objetivos/i],
 ]
+
+const dosDig = (n: number) => String(n).padStart(2, '0')
+
+/**
+ * Clave para no importar dos veces la misma respuesta: fecha y hora (al minuto) + correo. Se arma con la fecha ya
+ * interpretada para que coincida aunque Excel haya reescrito el formato ("03/10/26 12:31" vs "03/10/2026 12:31:00").
+ */
+function claveDe(fecha: Date | null, email: string): string {
+  const f = fecha
+    ? `${fecha.getFullYear()}-${dosDig(fecha.getMonth() + 1)}-${dosDig(fecha.getDate())} ${dosDig(fecha.getHours())}:${dosDig(fecha.getMinutes())}`
+    : 'sin-fecha'
+  return `${f}|${email.trim().toLowerCase()}`
+}
+
+/** Normaliza claves guardadas antes con el texto original de la fecha ("03/10/26 12:31|correo"). */
+export function normalizarClave(clave: string): string {
+  const i = clave.lastIndexOf('|')
+  if (i < 0) return clave
+  const fecha = clave.slice(0, i)
+  return /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(fecha) ? clave : claveDe(leerFecha(fecha), clave.slice(i + 1))
+}
 
 export function convertirCsv(texto: string): ResultadoImportacion {
   const filas = leerCsv(texto)
@@ -197,7 +240,7 @@ export function convertirCsv(texto: string): ResultadoImportacion {
     const solicitud: Importado = {
       creado: creado ?? new Date(),
       origen: 'formulario-anterior',
-      claveImportacion: `${c(0)}|${c(6).toLowerCase()}`,
+      claveImportacion: claveDe(creado, c(6)),
       puestoId: '',
       puestoNombre: c(1),
       fuente: '',

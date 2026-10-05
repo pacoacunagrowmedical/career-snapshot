@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import type { Store } from '../data/store'
 import type { Puesto } from '../types'
-import { convertirCsv, decodificar, type Importado } from '../importar/formularioAnterior'
+import { convertirCsv, decodificar, normalizarClave, type Importado } from '../importar/formularioAnterior'
 import { fechaCorta } from '../lib/fechas'
 import { useDatos } from './datos'
 
@@ -12,6 +12,8 @@ interface Fila {
   duplicado: boolean
   puestoNuevo: boolean
 }
+
+const aDiaIso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 const slug = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'puesto'
@@ -25,6 +27,7 @@ export function ImportarPage() {
   const [error, setError] = useState('')
   const [importando, setImportando] = useState(false)
   const [hecho, setHecho] = useState<number | null>(null)
+  const [desde, setDesde] = useState('') // AAAA-MM-DD; vacío = todas
 
   const leer = async (f: File) => {
     setError('')
@@ -35,14 +38,18 @@ export function ImportarPage() {
       const r = convertirCsv(decodificar(await f.arrayBuffer()))
       if (r.errores.length) return setError(r.errores.join(' '))
       const [existentes, ps] = await Promise.all([s.candidatos(), s.puestos()])
-      const claves = new Set(existentes.map((c) => c.claveImportacion).filter(Boolean))
+      const claves = new Set(existentes.map((c) => c.claveImportacion).filter((k): k is string => !!k).map(normalizarClave))
+      // Por omisión, importar desde el día de la respuesta más reciente que ya se importó (así el archivo completo de
+      // Google Sheets se puede subir tal cual, sin borrar las respuestas viejas).
+      const ultima = existentes.filter((c) => c.origen === 'formulario-anterior').reduce<Date | null>((m, c) => (!m || c.creado > m ? c.creado : m), null)
+      setDesde(ultima ? aDiaIso(ultima) : '')
       const nombres = new Set(ps.map((p) => p.nombre.trim().toLowerCase()))
       setPuestos(ps)
       setFilas(
         r.registros.map(({ solicitud, avisos }) => ({
           solicitud,
           avisos,
-          duplicado: claves.has(solicitud.claveImportacion),
+          duplicado: claves.has(normalizarClave(solicitud.claveImportacion ?? '')),
           puestoNuevo: !!solicitud.puestoNombre && !nombres.has(solicitud.puestoNombre.trim().toLowerCase()),
         })),
       )
@@ -51,7 +58,10 @@ export function ImportarPage() {
     }
   }
 
-  const nuevas = filas?.filter((f) => !f.duplicado) ?? []
+  const enRango = (f: Fila) => !desde || aDiaIso(f.solicitud.creado) >= desde
+  const antiguas = filas?.filter((f) => !enRango(f)).length ?? 0
+  const visibles = filas?.filter(enRango) ?? []
+  const nuevas = visibles.filter((f) => !f.duplicado)
 
   const importar = async () => {
     setImportando(true)
@@ -88,8 +98,8 @@ export function ImportarPage() {
       <div className="card stack" style={{ marginBottom: 16 }}>
         <ol className="small" style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 4 }}>
           <li>Abre la hoja de respuestas del formulario en Google Sheets.</li>
-          <li><b>Archivo → Descargar → Valores separados por comas (.csv)</b>.</li>
-          <li>Selecciona aquí ese archivo, revisa la vista previa y confirma.</li>
+          <li><b>Archivo → Descargar → Valores separados por comas (.csv)</b>. No hace falta borrar las respuestas viejas ni abrirlo en Excel.</li>
+          <li>Selecciona aquí ese archivo. Se propone importar desde el día de la última respuesta que ya importaste; puedes cambiar la fecha.</li>
         </ol>
         <label className="btn btn-agregar" style={{ cursor: 'pointer' }}>
           <span className="mas">↑</span>
@@ -117,8 +127,14 @@ export function ImportarPage() {
       {filas && (
         <>
           <div className="row" style={{ marginBottom: 10 }}>
-            <b>{filas.length} respuestas en el archivo</b>
-            <span className="muted">· {nuevas.length} nuevas · {filas.length - nuevas.length} ya importadas</span>
+            <label className="row" style={{ gap: 6 }}>
+              <span className="small">Importar respuestas desde</span>
+              <input type="date" className="input input-sm" style={{ width: 'auto' }} value={desde} onChange={(e) => setDesde(e.target.value)} />
+              {desde && <button className="link-btn small" onClick={() => setDesde('')}>Ver todas</button>}
+            </label>
+            <span className="muted small">
+              {filas.length} en el archivo{antiguas ? ` · ${antiguas} anteriores a la fecha (se omiten)` : ''} · {nuevas.length} nuevas · {visibles.length - nuevas.length} ya importadas
+            </span>
             <div className="spacer" />
             <button className="btn btn-primary" disabled={!nuevas.length || importando} onClick={importar}>
               {importando ? 'Importando…' : nuevas.length ? `Importar ${nuevas.length} ${nuevas.length === 1 ? 'candidato' : 'candidatos'}` : 'Nada nuevo que importar'}
@@ -137,7 +153,7 @@ export function ImportarPage() {
                 </tr>
               </thead>
               <tbody>
-                {filas.map((f, i) => (
+                {visibles.map((f, i) => (
                   <tr key={i} style={f.duplicado ? { opacity: 0.55 } : undefined}>
                     <td><b>{f.solicitud.nombre || 'Sin nombre'}</b><div className="muted small">{f.solicitud.email}</div></td>
                     <td>

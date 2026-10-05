@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calificacionDe10, convertirCsv, decodificar, leerCsv } from './formularioAnterior'
+import { calificacionDe10, convertirCsv, decodificar, leerCsv, normalizarClave } from './formularioAnterior'
 import ejemplo from './ejemplo-formulario-anterior.csv?raw'
 
 describe('importar del formulario anterior (datos ficticios)', () => {
@@ -39,7 +39,7 @@ describe('importar del formulario anterior (datos ficticios)', () => {
 
   it('avisa del sueldo no reconocido y genera clave para no duplicar', () => {
     expect(r.registros[0].avisos.join()).toMatch(/sueldo no reconocido/)
-    expect(ana.claveImportacion).toBe('03/10/26 12:31|ana@example.com')
+    expect(ana.claveImportacion).toBe('2026-10-03 12:31|ana@example.com')
     expect(ana.origen).toBe('formulario-anterior')
   })
 
@@ -55,5 +55,22 @@ describe('importar del formulario anterior (datos ficticios)', () => {
     const latin1 = new Uint8Array([...texto].map((ch) => ch.charCodeAt(0))).buffer
     expect(decodificar(utf8)).toBe(texto)
     expect(decodificar(latin1)).toBe(texto)
+  })
+
+  it('acepta CSV de Excel con punto y coma y fechas con año de 4 dígitos', () => {
+    const excel = ejemplo
+      .split('\n')
+      .map((l) => leerCsv(l)[0]?.map((c) => (c.includes(';') || c.includes('"') ? `"${c.replace(/"/g, '""')}"` : c)).join(';') ?? '')
+      .join('\n')
+      .replace('03/10/26 12:31', '03/10/2026 12:31:00')
+    const r = convertirCsv(excel)
+    expect(r.errores).toEqual([])
+    expect(r.registros).toHaveLength(2)
+    expect(r.registros[0].solicitud.claveImportacion).toBe('2026-10-03 12:31|ana@example.com')
+  })
+
+  it('reconoce claves guardadas con el formato anterior', () => {
+    expect(normalizarClave('03/10/26 12:31|Ana@Example.com')).toBe('2026-10-03 12:31|ana@example.com')
+    expect(normalizarClave('2026-10-03 12:31|ana@example.com')).toBe('2026-10-03 12:31|ana@example.com')
   })
 })
