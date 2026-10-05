@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { DOMINIO_PERMITIDO, store, type Store, type Usuario } from '../data/store'
+import { ProveedorDatos } from './datos'
 
 export function PanelLayout() {
   const [s, setS] = useState<Store | null>(null)
@@ -64,7 +65,9 @@ export function PanelLayout() {
         </div>
       </header>
       <main className="panel-main">
-        <Outlet context={s} />
+        <ProveedorDatos s={s}>
+          <Outlet context={s} />
+        </ProveedorDatos>
       </main>
     </>
   )

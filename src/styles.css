@@ -289,3 +289,23 @@ ol.notas { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .popover.arriba { top: auto; bottom: calc(100% + 6px); left: auto; right: 0; }
 .barra-seleccion .select-sm { background: var(--surface); color: var(--text); }
 .panel-main:has(.tablero) { max-width: none; }
+
+/* ——— Perfil con lista lateral ——— */
+.panel-main:has(.perfil-layout.con-lateral) { max-width: 1560px; }
+.perfil-layout.con-lateral { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 20px; align-items: start; }
+.perfil-contenido { min-width: 0; }
+.lateral { position: sticky; top: 12px; max-height: calc(100vh - 24px); display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.lateral-cabeza { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+.input-sm { min-height: 32px; padding: 5px 10px; font-size: 0.875rem; }
+.lateral .select-sm { width: 100%; }
+.lateral-lista { overflow-y: auto; }
+.lateral-item { display: block; padding: 10px 12px; border-bottom: 1px solid var(--border); text-decoration: none; color: var(--text); border-left: 3px solid transparent; }
+.lateral-item:hover { background: var(--surface-2); }
+.lateral-item.activo { background: var(--brand-wash); border-left-color: var(--brand); }
+.lateral-item .nombre { font-weight: 600; font-size: 0.9rem; }
+.dot-lateral { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 3px; }
+.navegacion { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; }
+@media (max-width: 960px) {
+  .perfil-layout.con-lateral { display: block; }
+  .lateral, .solo-escritorio { display: none !important; }
+}

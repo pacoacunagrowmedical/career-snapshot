@@ -10,6 +10,7 @@ import { ListaEtiquetas } from './Etiquetas'
 export function Tablero(props: {
   filas: { c: Candidato; a: Analisis }[]
   etiquetas: Etiqueta[]
+  consulta: string // filtros activos, para que el perfil muestre la misma selección
   onMover: (c: Candidato, etapa: string) => void
 }) {
   const [arrastrando, setArrastrando] = useState<string | null>(null)
@@ -50,7 +51,7 @@ export function Tablero(props: {
                 return (
                   <Link
                     key={c.id}
-                    to={`/panel/candidato/${c.id}`}
+                    to={`/panel/candidato/${c.id}${props.consulta}`}
                     className={`tarjeta${arrastrando === c.id ? ' arrastrando' : ''}`}
                     draggable
                     onDragStart={(e) => {

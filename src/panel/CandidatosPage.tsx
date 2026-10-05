@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import type { Store } from '../data/store'
-import type { Candidato, Etiqueta, Puesto } from '../types'
+import type { Candidato } from '../types'
 import { analizarSeguro as analizar } from '../lib/analisis'
 import { ETAPAS, FUENTES, etiquetaFuente } from '../lib/catalogos'
 import { candidatosACsv, descargar } from '../lib/csv'
@@ -11,6 +11,7 @@ import { ConfirmarBorrado } from './ConfirmarBorrado'
 import { ListaEtiquetas, SelectorEtiquetas } from './Etiquetas'
 import { Tablero } from './Tablero'
 import { moverAEtapa } from './seguimiento'
+import { useDatos, useFiltros } from './datos'
 
 const CLAVE_VISTA = 'snapshot-vista'
 const vistaGuardada = (): 'lista' | 'tablero' => {
@@ -23,47 +24,20 @@ const vistaGuardada = (): 'lista' | 'tablero' => {
 
 export function CandidatosPage() {
   const s = useOutletContext<Store>()
-  const [candidatos, setCandidatos] = useState<Candidato[] | null>(null)
-  const [puestos, setPuestos] = useState<Puesto[]>([])
-  const [busqueda, setBusqueda] = useState('')
-  const [puesto, setPuesto] = useState('')
-  const [fuente, setFuente] = useState('')
-  const [etapaFiltro, setEtapaFiltro] = useState('')
-  const [etiquetaFiltro, setEtiquetaFiltro] = useState('')
-  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
-  const [vista, setVista] = useState(vistaGuardada)
+  const { candidatos, puestos, etiquetas, error: errorCarga, recargar: cargar, aplicar, setEtiquetas } = useDatos()
+  const f = useFiltros()
   const [sel, setSel] = useState<Set<string>>(new Set())
   const [borrar, setBorrar] = useState<Candidato[] | null>(null)
-  const [error, setError] = useState('')
-
-  const cargar = () =>
-    Promise.all([s.candidatos(), s.puestos(), s.etiquetas()])
-      .then(([c, p, e]) => {
-        setCandidatos(c)
-        setPuestos(p)
-        setEtiquetas(e)
-      })
-      .catch((e: Error) => setError(e.message))
-
-  useEffect(() => {
-    cargar()
-  }, [s])
+  const [errorAccion, setError] = useState('')
+  const error = errorCarga || errorAccion
+  const [vista, setVista] = useState(vistaGuardada)
 
   const sueldos = useMemo(() => new Map(puestos.map((p) => [p.id, p.sueldoOfrecido])), [puestos])
 
-  const filas = useMemo(() => {
-    if (!candidatos) return []
-    const q = busqueda.trim().toLowerCase()
-    return candidatos
-      .filter((c) => (!puesto || c.puestoId === puesto) && (!fuente || c.fuente === fuente))
-      .filter((c) => (!etapaFiltro || c.etapa === etapaFiltro) && (!etiquetaFiltro || c.etiquetas.includes(etiquetaFiltro)))
-      .filter((c) => !q || `${c.nombre} ${c.email} ${c.empleos.map((e) => e.empresa).join(' ')}`.toLowerCase().includes(q))
-      .map((c) => ({ c, a: analizar(c, sueldos.get(c.puestoId) ?? null) }))
-  }, [candidatos, busqueda, puesto, fuente, etapaFiltro, etiquetaFiltro, sueldos])
-
-  // Cambios del equipo: se reflejan al instante en pantalla y se guardan en segundo plano.
-  const aplicar = (ids: string[], cambio: (c: Candidato) => Candidato) =>
-    setCandidatos((cs) => cs && cs.map((c) => (ids.includes(c.id) ? cambio(c) : c)))
+  const filas = useMemo(
+    () => (candidatos ? f.filtrar(candidatos).map((c) => ({ c, a: analizar(c, sueldos.get(c.puestoId) ?? null) })) : []),
+    [candidatos, f.filtrar, sueldos],
+  )
 
   const mover = async (cs: Candidato[], destino: string) => {
     aplicar(cs.map((c) => c.id), (c) => ({ ...c, etapa: destino }))
@@ -113,29 +87,27 @@ export function CandidatosPage() {
       </div>
 
       <div className="filtros">
-        <input className="input" placeholder="Buscar por nombre, correo o empresa" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
-        <select className="select" value={puesto} onChange={(e) => setPuesto(e.target.value)}>
+        <input className="input" placeholder="Buscar por nombre, correo o empresa" value={f.valor('q')} onChange={(e) => f.set('q', e.target.value)} />
+        <select className="select" value={f.valor('puesto')} onChange={(e) => f.set('puesto', e.target.value)}>
           <option value="">Todos los puestos</option>
           {puestos.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
         </select>
-        <select className="select" value={fuente} onChange={(e) => setFuente(e.target.value)}>
+        <select className="select" value={f.valor('fuente')} onChange={(e) => f.set('fuente', e.target.value)}>
           <option value="">Todas las fuentes</option>
           {FUENTES.map((f) => <option key={f.valor} value={f.valor}>{f.etiqueta}</option>)}
         </select>
-        {vista === 'lista' && (
-          <select className="select" value={etapaFiltro} onChange={(e) => setEtapaFiltro(e.target.value)}>
-            <option value="">Todas las etapas</option>
-            {ETAPAS.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-          </select>
-        )}
-        <select className="select" value={etiquetaFiltro} onChange={(e) => setEtiquetaFiltro(e.target.value)}>
+        <select className="select" value={f.valor('etapa')} onChange={(e) => f.set('etapa', e.target.value)}>
+          <option value="">Todas las etapas</option>
+          {ETAPAS.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+        </select>
+        <select className="select" value={f.valor('etiqueta')} onChange={(e) => f.set('etiqueta', e.target.value)}>
           <option value="">Todas las etiquetas</option>
           {etiquetas.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
         </select>
       </div>
 
       {vista === 'tablero' && candidatos.length > 0 ? (
-        <Tablero filas={filas} etiquetas={etiquetas} onMover={(c, destino) => mover([c], destino)} />
+        <Tablero filas={filas} etiquetas={etiquetas} consulta={f.consulta} onMover={(c, destino) => mover([c], destino)} />
       ) : !filas.length ? (
         <div className="tabla-wrap vacio">{candidatos.length ? 'Ningún candidato coincide con los filtros.' : 'Aún no hay solicitudes. Comparte la liga del formulario para empezar a recibirlas.'}</div>
       ) : (
@@ -183,7 +155,7 @@ export function CandidatosPage() {
                       />
                     </td>
                     <td>
-                      <Link className="nombre" to={`/panel/candidato/${c.id}`}>{c.nombre}</Link>
+                      <Link className="nombre" to={`/panel/candidato/${c.id}${f.consulta}`}>{c.nombre}</Link>
                       <div className="muted small">
                         {c.origen === 'formulario-anterior' ? 'Formulario anterior' : etiquetaFuente(c.fuente)}
                         {c.pais && c.pais !== 'México' ? ` · ${c.pais}` : ''}

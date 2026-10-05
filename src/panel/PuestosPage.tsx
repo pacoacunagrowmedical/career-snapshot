@@ -4,16 +4,21 @@ import type { Store } from '../data/store'
 import type { Puesto } from '../types'
 import { DineroInput } from '../form/campos'
 import { dinero } from '../lib/formato'
+import { useDatos } from './datos'
 
 type Edicion = Omit<Puesto, 'id'> & { id?: string }
 
 export function PuestosPage() {
   const s = useOutletContext<Store>()
+  const { recargar } = useDatos()
   const [puestos, setPuestos] = useState<Puesto[] | null>(null)
   const [edicion, setEdicion] = useState<Edicion | null>(null)
   const [guardando, setGuardando] = useState(false)
 
-  const cargar = () => s.puestos().then(setPuestos)
+  const cargar = () => {
+    recargar()
+    return s.puestos().then(setPuestos)
+  }
   useEffect(() => {
     cargar()
   }, [s])

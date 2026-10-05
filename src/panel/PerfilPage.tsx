@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import type { Store } from '../data/store'
-import type { Candidato, Etiqueta, Puesto } from '../types'
 import { analizarSeguro as analizar } from '../lib/analisis'
 import { CONTACTO_JEFE, ETAPAS, PRESTACIONES, calificacion, etiquetaFuente, razon } from '../lib/catalogos'
 import { candidatosACsv, descargar } from '../lib/csv'
@@ -12,41 +11,81 @@ import { ConfirmarBorrado } from './ConfirmarBorrado'
 import { ListaEtiquetas, SelectorEtiquetas } from './Etiquetas'
 import { Notas } from './Notas'
 import { moverAEtapa } from './seguimiento'
+import { useDatos, useFiltros } from './datos'
+import { ListaLateral } from './ListaLateral'
+
+const CLAVE_LATERAL = 'snapshot-lateral'
+const lateralGuardado = () => {
+  try {
+    return localStorage.getItem(CLAVE_LATERAL) !== '0'
+  } catch {
+    return true
+  }
+}
 
 export function PerfilPage() {
   const s = useOutletContext<Store>()
   const { id } = useParams()
   const navegar = useNavigate()
-  const [c, setC] = useState<Candidato | null | undefined>(undefined)
-  const [puestos, setPuestos] = useState<Puesto[]>([])
+  const { candidatos, puestos, etiquetas, setEtiquetas, aplicar, recargar } = useDatos()
+  const f = useFiltros()
   const [borrar, setBorrar] = useState(false)
-  const [etiquetas, setEtiquetas] = useState<Etiqueta[]>([])
   const [recargarNotas, setRecargarNotas] = useState(0)
+  const [lateral, setLateral] = useState(lateralGuardado)
 
+  const c = candidatos === null ? undefined : (candidatos.find((x) => x.id === id) ?? null)
+  const sueldos = useMemo(() => new Map(puestos.map((p) => [p.id, p.sueldoOfrecido])), [puestos])
+  const filas = useMemo(
+    () => (candidatos ? f.filtrar(candidatos).map((x) => ({ c: x, a: analizar(x, sueldos.get(x.puestoId) ?? null) })) : []),
+    [candidatos, f.filtrar, sueldos],
+  )
+  const idx = filas.findIndex((x) => x.c.id === id)
+  const anterior = idx > 0 ? filas[idx - 1].c.id : null
+  const siguiente = idx >= 0 ? (filas[idx + 1]?.c.id ?? null) : (filas[0]?.c.id ?? null)
+  const ir = (destino: string | null) => destino && navegar(`/panel/candidato/${destino}${f.consulta}`)
+
+  // Al cambiar de candidato, empezar arriba.
   useEffect(() => {
-    Promise.all([s.candidato(id!), s.puestos(), s.etiquetas()]).then(([cand, p, e]) => {
-      setC(cand)
-      setPuestos(p)
-      setEtiquetas(e)
-    })
-  }, [s, id])
+    window.scrollTo({ top: 0 })
+  }, [id])
+
+  // Flechas del teclado ← → para pasar al candidato anterior o siguiente (si no se está escribiendo).
+  useEffect(() => {
+    const tecla = (e: KeyboardEvent) => {
+      const el = e.target instanceof Element ? e.target : null
+      if (el?.closest('input, textarea, select, [contenteditable]') || e.metaKey || e.ctrlKey || e.altKey) return
+      if (e.key === 'ArrowLeft' && anterior) ir(anterior)
+      if (e.key === 'ArrowRight' && siguiente) ir(siguiente)
+    }
+    window.addEventListener('keydown', tecla)
+    return () => window.removeEventListener('keydown', tecla)
+  }, [anterior, siguiente, f.consulta])
+
+  const alternarLateral = (v: boolean) => {
+    setLateral(v)
+    try {
+      localStorage.setItem(CLAVE_LATERAL, v ? '1' : '0')
+    } catch {
+      /* sin almacenamiento */
+    }
+  }
 
   const cambiarEtapa = async (destino: string) => {
     if (!c) return
+    aplicar([c.id], (x) => ({ ...x, etapa: destino }))
     await moverAEtapa(s, [c], destino)
-    setC({ ...c, etapa: destino })
     setRecargarNotas((n) => n + 1)
   }
 
   const cambiarEtiqueta = async (etiquetaId: string, marcar: boolean) => {
     if (!c) return
     const nuevas = marcar ? [...new Set([...c.etiquetas, etiquetaId])] : c.etiquetas.filter((x) => x !== etiquetaId)
-    setC({ ...c, etiquetas: nuevas })
+    aplicar([c.id], (x) => ({ ...x, etiquetas: nuevas }))
     await s.actualizarCandidatos([c.id], { etiquetas: nuevas })
   }
 
   if (c === undefined) return <p className="muted">Cargando…</p>
-  if (c === null) return <div className="vacio">Este candidato no existe o fue eliminado. <Link to="/panel">Volver a la lista</Link></div>
+  if (c === null) return <div className="vacio">Este candidato no existe o fue eliminado. <Link to={`/panel${f.consulta}`}>Volver a la lista</Link></div>
 
   const ofrecido = puestos.find((p) => p.id === c.puestoId)?.sueldoOfrecido ?? null
   const a = analizar(c, ofrecido)
@@ -54,9 +93,19 @@ export function PerfilPage() {
   const cronologicoDesc = [...a.empleos].reverse()
 
   return (
-    <div>
+    <div className={`perfil-layout${lateral ? ' con-lateral' : ''}`}>
+      {lateral && (
+        <ListaLateral filas={filas} actual={c.id} puestos={puestos} etiquetas={etiquetas} filtros={f} onOcultar={() => alternarLateral(false)} />
+      )}
+    <div className="perfil-contenido">
       <div className="row no-print" style={{ marginBottom: 12 }}>
-        <Link to="/panel" className="btn btn-sm btn-ghost">← Candidatos</Link>
+        <Link to={`/panel${f.consulta}`} className="btn btn-sm btn-ghost">← Candidatos</Link>
+        {!lateral && <button className="btn btn-sm btn-ghost solo-escritorio" onClick={() => alternarLateral(true)}>⟩⟩ Mostrar lista</button>}
+        <div className="navegacion">
+          <button className="btn btn-sm" disabled={!anterior} onClick={() => ir(anterior)} title="Anterior (←)" aria-label="Candidato anterior">←</button>
+          <span className="small muted tabular">{idx >= 0 ? `${idx + 1} de ${filas.length}` : `— de ${filas.length}`}</span>
+          <button className="btn btn-sm" disabled={!siguiente} onClick={() => ir(siguiente)} title="Siguiente (→)" aria-label="Candidato siguiente">→</button>
+        </div>
         <div className="spacer" />
         <button className="btn btn-sm" onClick={() => window.print()}>Imprimir / PDF</button>
         <button className="btn btn-sm" style={{ color: 'var(--rojo)' }} onClick={() => setBorrar(true)}>Eliminar</button>
@@ -304,11 +353,15 @@ export function PerfilPage() {
           onCancelar={() => setBorrar(false)}
           onExportar={() => descargar(`${c.nombre}.csv`, candidatosACsv([c], new Map([[c.puestoId, ofrecido]])))}
           onConfirmar={async () => {
+            const despues = siguiente ?? anterior
             await s.borrarCandidatos([c.id])
-            navegar('/panel')
+            setBorrar(false)
+            await recargar()
+            navegar(despues ? `/panel/candidato/${despues}${f.consulta}` : `/panel${f.consulta}`)
           }}
         />
       )}
+    </div>
     </div>
   )
 }

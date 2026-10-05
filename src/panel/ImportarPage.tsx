@@ -4,6 +4,7 @@ import type { Store } from '../data/store'
 import type { Puesto } from '../types'
 import { convertirCsv, type Importado } from '../importar/formularioAnterior'
 import { fechaCorta } from '../lib/fechas'
+import { useDatos } from './datos'
 
 interface Fila {
   solicitud: Importado
@@ -17,6 +18,7 @@ const slug = (s: string) =>
 
 export function ImportarPage() {
   const s = useOutletContext<Store>()
+  const { recargar } = useDatos()
   const [archivo, setArchivo] = useState('')
   const [filas, setFilas] = useState<Fila[] | null>(null)
   const [puestos, setPuestos] = useState<Puesto[]>([])
@@ -66,6 +68,7 @@ export function ImportarPage() {
         nuevas.map((f) => ({ ...f.solicitud, puestoId: porNombre.get(f.solicitud.puestoNombre.trim().toLowerCase()) ?? '' })),
       )
       setHecho(nuevas.length)
+      recargar()
       setFilas(null)
     } catch (e) {
       setError(`La importación falló: ${(e as Error).message}. No se marcó nada como importado; puedes intentarlo de nuevo.`)
