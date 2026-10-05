@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import type { Store } from '../data/store'
 import type { Puesto } from '../types'
-import { convertirCsv, type Importado } from '../importar/formularioAnterior'
+import { convertirCsv, decodificar, type Importado } from '../importar/formularioAnterior'
 import { fechaCorta } from '../lib/fechas'
 import { useDatos } from './datos'
 
@@ -32,7 +32,7 @@ export function ImportarPage() {
     setFilas(null)
     setArchivo(f.name)
     try {
-      const r = convertirCsv(await f.text())
+      const r = convertirCsv(decodificar(await f.arrayBuffer()))
       if (r.errores.length) return setError(r.errores.join(' '))
       const [existentes, ps] = await Promise.all([s.candidatos(), s.puestos()])
       const claves = new Set(existentes.map((c) => c.claveImportacion).filter(Boolean))

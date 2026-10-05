@@ -13,6 +13,19 @@ export interface ResultadoImportacion {
   errores: string[] // problemas que impiden leer el archivo
 }
 
+/**
+ * Convierte los bytes del archivo a texto. Google Sheets descarga en UTF-8, pero si el archivo se abrió y se volvió a
+ * guardar en Excel o Numbers suele quedar en Windows-1252 (Latin-1) y los acentos salen como "�". Se intenta UTF-8
+ * estricto y, si falla, Windows-1252.
+ */
+export function decodificar(bytes: ArrayBuffer): string {
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes)
+  } catch {
+    return new TextDecoder('windows-1252').decode(bytes)
+  }
+}
+
 /** Lector de CSV que respeta comillas, comas y saltos de línea dentro de los campos. */
 export function leerCsv(texto: string): string[][] {
   const filas: string[][] = []
@@ -143,7 +156,10 @@ export function convertirCsv(texto: string): ResultadoImportacion {
       const s1 = leerDinero(c(k.s1))
       const s2 = leerDinero(c(k.s2))
       if (!inicio) avisos.push(`${c(k.empresa)}: sin fecha de entrada`)
-      if (!Number.isFinite(s1) || !Number.isFinite(s2)) avisos.push(`${c(k.empresa)}: sueldo no reconocido ("${c(k.s1) || '—'}" / "${c(k.s2) || '—'}")`)
+      if (!c(k.s1) && !c(k.s2)) avisos.push(`${c(k.empresa)}: sin sueldo reportado`)
+      else if (!Number.isFinite(s1) || !Number.isFinite(s2)) {
+        avisos.push(`${c(k.empresa)}: sueldo no reconocido ("${c(k.s1) || 'vacío'}" / "${c(k.s2) || 'vacío'}")`)
+      }
       empleos.push({
         empresa: c(k.empresa),
         puestoInicial: c(k.puesto),

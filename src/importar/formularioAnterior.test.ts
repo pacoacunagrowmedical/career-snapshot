@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { calificacionDe10, convertirCsv, leerCsv } from './formularioAnterior'
+import { calificacionDe10, convertirCsv, decodificar, leerCsv } from './formularioAnterior'
 import ejemplo from './ejemplo-formulario-anterior.csv?raw'
 
 describe('importar del formulario anterior (datos ficticios)', () => {
@@ -46,5 +46,14 @@ describe('importar del formulario anterior (datos ficticios)', () => {
   it('rechaza un CSV de otro formato', () => {
     expect(convertirCsv('a,b\n1,2').errores.length).toBe(1)
     expect(leerCsv('"x,y","con ""comillas"""\n')).toEqual([['x,y', 'con "comillas"']])
+  })
+
+  it('lee archivos guardados en UTF-8 y en Windows-1252 (Excel)', () => {
+    const texto = 'Moisés Gamboa, Garduño, Sepúlveda'
+    const utf8 = new TextEncoder().encode(texto).buffer
+    // Windows-1252: cada letra acentuada es un solo byte
+    const latin1 = new Uint8Array([...texto].map((ch) => ch.charCodeAt(0))).buffer
+    expect(decodificar(utf8)).toBe(texto)
+    expect(decodificar(latin1)).toBe(texto)
   })
 })
