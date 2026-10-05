@@ -33,9 +33,10 @@ export const ASPECTOS_CALIFICACION = [
   { clave: 'trato', etiqueta: 'Trato con la gente', pregunta: '¿Cómo te calificaría en trato con la gente (compañeros, jefes, clientes)?' },
 ] as const
 
-// Etapas del proceso (mismas columnas que el tablero de Trello, más Nuevo / Contratado / Descartado).
+// Etapas del proceso (mismas columnas que el tablero de Trello, más Nuevo / En duda / Contratado / Descartado).
 export const ETAPAS = [
   { id: 'nuevo', nombre: 'Nuevo' },
+  { id: 'en-duda', nombre: 'En duda' }, // reserva: no convencen al 100 %, pero no se descartan todavía
   { id: 'entrevista-escrita', nombre: 'Entrevista escrita, HCF y video' },
   { id: 'llamada-filtrado', nombre: 'Llamada telefónica de filtrado' },
   { id: 'entrevista-who', nombre: 'Entrevista Who y competencias' },
