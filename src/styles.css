@@ -309,3 +309,4 @@ ol.notas { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
   .perfil-layout.con-lateral { display: block; }
   .lateral, .solo-escritorio { display: none !important; }
 }
+.linea-destino { height: 3px; border-radius: 2px; background: var(--brand); margin: -2px 2px; }

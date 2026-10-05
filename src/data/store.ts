@@ -24,7 +24,7 @@ export interface Store {
   borrarCandidatos(ids: string[]): Promise<void>
   importarCandidatos(cs: (Solicitud & { creado: Date })[]): Promise<void>
   // Seguimiento
-  actualizarCandidatos(ids: string[], cambios: { etapa?: string; etiquetas?: string[] }): Promise<void>
+  actualizarCandidatos(ids: string[], cambios: { etapa?: string; etiquetas?: string[]; orden?: number }): Promise<void>
   etiquetas(): Promise<Etiqueta[]>
   guardarEtiqueta(e: Omit<Etiqueta, 'id'> & { id?: string }): Promise<Etiqueta>
   borrarEtiqueta(id: string): Promise<void>

@@ -40,7 +40,7 @@ service cloud.firestore {
       allow read, delete: if esEquipo();
       // El equipo solo puede cambiar el seguimiento (etapa, etiquetas, contador de notas), nunca las respuestas del candidato.
       allow update: if esEquipo()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['etapa', 'etiquetas', 'numNotas']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['etapa', 'etiquetas', 'numNotas', 'orden']);
 
       // Notas y registro de cambios de etapa.
       match /notas/{nota} {

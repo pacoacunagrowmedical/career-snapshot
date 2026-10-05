@@ -85,6 +85,7 @@ export interface Candidato extends Solicitud {
   etapa: string // id de ETAPAS
   etiquetas: string[] // ids de Etiqueta
   numNotas: number
+  orden?: number // posición elegida a mano dentro de su columna del tablero (menor = más arriba)
 }
 
 export interface Etiqueta {

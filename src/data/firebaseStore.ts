@@ -129,6 +129,7 @@ export function crearFirebaseStore(): Store {
       const datos: Record<string, unknown> = {}
       if (cambios.etapa !== undefined) datos.etapa = cambios.etapa
       if (cambios.etiquetas !== undefined) datos.etiquetas = cambios.etiquetas
+      if (cambios.orden !== undefined) datos.orden = cambios.orden
       for (let i = 0; i < ids.length; i += 400) {
         const batch = writeBatch(db)
         for (const id of ids.slice(i, i + 400)) batch.update(doc(db, 'candidatos', id), datos)

@@ -39,10 +39,10 @@ export function CandidatosPage() {
     [candidatos, f.filtrar, sueldos],
   )
 
-  const mover = async (cs: Candidato[], destino: string) => {
-    aplicar(cs.map((c) => c.id), (c) => ({ ...c, etapa: destino }))
+  const mover = async (cs: Candidato[], destino: string, orden?: number) => {
+    aplicar(cs.map((c) => c.id), (c) => ({ ...c, etapa: destino, ...(orden !== undefined ? { orden } : {}) }))
     try {
-      await moverAEtapa(s, cs, destino)
+      await moverAEtapa(s, cs, destino, orden)
     } catch (e) {
       setError(`No se pudo mover: ${(e as Error).message}`)
       cargar()
@@ -107,7 +107,7 @@ export function CandidatosPage() {
       </div>
 
       {vista === 'tablero' && candidatos.length > 0 ? (
-        <Tablero filas={filas} etiquetas={etiquetas} consulta={f.consulta} onMover={(c, destino) => mover([c], destino)} />
+        <Tablero filas={filas} etiquetas={etiquetas} consulta={f.consulta} onMover={(c, destino, orden) => mover([c], destino, orden)} />
       ) : !filas.length ? (
         <div className="tabla-wrap vacio">{candidatos.length ? 'Ningún candidato coincide con los filtros.' : 'Aún no hay solicitudes. Comparte la liga del formulario para empezar a recibirlas.'}</div>
       ) : (

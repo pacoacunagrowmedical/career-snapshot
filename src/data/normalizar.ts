@@ -93,5 +93,6 @@ export function normalizarCandidato(id: string, raw: Record<string, unknown>, cr
     etapa: ETAPAS.some((e) => e.id === raw.etapa) ? (raw.etapa as string) : 'nuevo',
     etiquetas: lista(raw.etiquetas).map(txt).filter(Boolean),
     numNotas: Math.max(0, num(raw.numNotas)),
+    orden: typeof raw.orden === 'number' && Number.isFinite(raw.orden) ? raw.orden : undefined,
   }
 }
