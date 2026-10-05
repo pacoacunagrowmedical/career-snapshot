@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useOutletContext } from 'react-router-dom'
 import type { Store } from '../data/store'
 import type { Puesto } from '../types'
-import { convertirCsv, decodificar, normalizarClave, type Importado } from '../importar/formularioAnterior'
+import { convertirCsv, convertirFilas, decodificar, filasDeXlsx, normalizarClave, type Importado } from '../importar/formularioAnterior'
 import { fechaCorta } from '../lib/fechas'
 import { useDatos } from './datos'
 
@@ -35,7 +35,9 @@ export function ImportarPage() {
     setFilas(null)
     setArchivo(f.name)
     try {
-      const r = convertirCsv(decodificar(await f.arrayBuffer()))
+      const esExcel = /\.xlsx$/i.test(f.name)
+      if (/\.xls$/i.test(f.name)) return setError('El formato .xls (Excel 97-2003) no se puede leer. Guárdalo como .xlsx o como CSV.')
+      const r = esExcel ? convertirFilas(await filasDeXlsx(f)) : convertirCsv(decodificar(await f.arrayBuffer()))
       if (r.errores.length) return setError(r.errores.join(' '))
       const [existentes, ps] = await Promise.all([s.candidatos(), s.puestos()])
       const claves = new Set(existentes.map((c) => c.claveImportacion).filter((k): k is string => !!k).map(normalizarClave))
@@ -98,16 +100,16 @@ export function ImportarPage() {
       <div className="card stack" style={{ marginBottom: 16 }}>
         <ol className="small" style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 4 }}>
           <li>Abre la hoja de respuestas del formulario en Google Sheets.</li>
-          <li><b>Archivo → Descargar → Valores separados por comas (.csv)</b>. No hace falta borrar las respuestas viejas ni abrirlo en Excel.</li>
+          <li><b>Archivo → Descargar → Valores separados por comas (.csv)</b> o <b>Microsoft Excel (.xlsx)</b>. No hace falta borrar las respuestas viejas; si lo editas en Excel, también se acepta.</li>
           <li>Selecciona aquí ese archivo. Se propone importar desde el día de la última respuesta que ya importaste; puedes cambiar la fecha.</li>
         </ol>
         <label className="btn btn-agregar" style={{ cursor: 'pointer' }}>
           <span className="mas">↑</span>
           <span>
-            {archivo ? `Archivo: ${archivo}` : 'Elegir archivo CSV'}
+            {archivo ? `Archivo: ${archivo}` : 'Elegir archivo (CSV o Excel .xlsx)'}
             <small>El archivo se procesa en tu navegador; solo se guardan los candidatos que confirmes</small>
           </span>
-          <input type="file" accept=".csv,text/csv" hidden onChange={(e) => e.target.files?.[0] && leer(e.target.files[0])} />
+          <input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden onChange={(e) => e.target.files?.[0] && leer(e.target.files[0])} />
         </label>
         <div className="aviso small">
           El formulario anterior no preguntaba: cómo se enteró de la vacante, sueldo esperado, calificaciones de resultados y trato

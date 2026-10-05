@@ -172,7 +172,28 @@ export function normalizarClave(clave: string): string {
 }
 
 export function convertirCsv(texto: string): ResultadoImportacion {
-  const filas = leerCsv(texto)
+  return convertirFilas(leerCsv(texto))
+}
+
+/** Lee un .xlsx (Excel o "Descargar como Microsoft Excel" de Google Sheets) y lo convierte a filas de texto. */
+export async function filasDeXlsx(archivo: File): Promise<string[][]> {
+  const { readSheet } = await import('read-excel-file/browser')
+  const filas = await readSheet(archivo)
+  return filas.map((fila) => fila.map(celdaATexto))
+}
+
+/** Las fechas de Excel llegan como Date en UTC con la hora "de pared"; se reescriben como "dd/mm/aaaa hh:mm". */
+export function celdaATexto(v: unknown): string {
+  if (v === null || v === undefined) return ''
+  if (v instanceof Date) {
+    const d = new Date(Math.round(v.getTime() / 60000) * 60000) // Excel guarda la hora como fracción: 12:31 llega como 12:30:59.999
+    const fecha = `${dosDig(d.getUTCDate())}/${dosDig(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`
+    return d.getUTCHours() || d.getUTCMinutes() ? `${fecha} ${dosDig(d.getUTCHours())}:${dosDig(d.getUTCMinutes())}` : fecha
+  }
+  return String(v)
+}
+
+export function convertirFilas(filas: string[][]): ResultadoImportacion {
   if (filas.length < 2) return { registros: [], errores: ['El archivo no tiene respuestas.'] }
   const h = filas[0]
   const faltan = ENCABEZADOS_ESPERADOS.filter(([i, re]) => !re.test(h[i] ?? ''))
