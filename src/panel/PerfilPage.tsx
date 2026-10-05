@@ -254,6 +254,29 @@ export function PerfilPage() {
                 <span className="muted small">{mesCorto(e.inicio)} – {e.actual ? 'actual' : mesCorto(e.fin!)}</span>
               </header>
               <dl>
+                <dt>Puesto</dt>
+                <dd>
+                  {e.puestoInicial === e.puestoFinal || !e.puestoFinal ? (
+                    <b>{e.puestoInicial || '—'}</b>
+                  ) : (
+                    <><b>{e.puestoFinal}</b> <span className="muted">(entró como {e.puestoInicial})</span></>
+                  )}
+                  <span className="muted"> · {e.ascensos >= 5 ? '5 o más ascensos' : e.ascensos === 1 ? '1 ascenso' : `${e.ascensos} ascensos`}</span>
+                </dd>
+                <dt>Tiempo en el empleo</dt>
+                <dd>{duracion(t.meses)}</dd>
+                <dt>Sueldo mensual neto</dt>
+                <dd>
+                  {e.sueldoInicial || e.sueldoFinal ? (
+                    <>
+                      <span className="tabular">{dinero(e.sueldoInicial || null, c.moneda)}</span> al entrar →{' '}
+                      <b className="tabular">{dinero(e.sueldoFinal || null, c.moneda)}</b> {e.actual ? 'actualmente' : 'al salir'}
+                      {e.sueldoInicial > 0 && e.sueldoFinal > 0 && <span className="muted"> ({porcentaje(e.sueldoFinal / e.sueldoInicial - 1)})</span>}
+                    </>
+                  ) : (
+                    <span className="muted">Sin sueldo reportado</span>
+                  )}
+                </dd>
                 <dt>Jefe directo</dt>
                 <dd>{e.jefeNombre} · {e.jefePuesto}</dd>
                 <dt>¿Podemos contactarlo?</dt>
