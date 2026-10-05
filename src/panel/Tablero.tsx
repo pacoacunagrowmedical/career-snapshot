@@ -49,7 +49,8 @@ export function Tablero(props: {
     setDestino(null)
   }
 
-  const linea = <div className="linea-destino" aria-hidden />
+  // Hueco donde caerá la tarjeta: un espacio marcado (como en Trello), más visible que una línea.
+  const linea = <div className="linea-destino" aria-hidden>Soltar aquí</div>
 
   return (
     <div className="tablero">
@@ -61,7 +62,10 @@ export function Tablero(props: {
             if (!arrastrando) return
             e.preventDefault()
             // Sobre el espacio libre de la columna: al final.
-            if ((e.target as Element).closest?.('.tarjeta') === null) setDestino({ etapa: et.id, indice: filas.length })
+            const t = e.target as Element
+            if (!t.closest?.('.tarjeta') && !t.closest?.('.linea-destino') && (destino?.etapa !== et.id || destino.indice !== filas.length)) {
+              setDestino({ etapa: et.id, indice: filas.length })
+            }
           }}
           onDragLeave={(e) => {
             if (!e.currentTarget.contains(e.relatedTarget as Node)) setDestino(null)

@@ -275,7 +275,7 @@ ol.notas { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .vista-toggle button.activo { background: var(--brand-wash); color: var(--brand); }
 .tablero { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px; align-items: flex-start; }
 .columna { flex: 0 0 260px; background: #ebeef0; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 230px); }
-.columna.sobre { outline: 2px dashed var(--brand); background: var(--brand-wash); }
+.columna.sobre { background: #dfeeea; }
 .columna header { display: flex; justify-content: space-between; gap: 8px; font-weight: 650; font-size: 0.88rem; padding: 2px 4px; }
 .columna .tarjetas { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 40px; }
 .tarjeta { background: var(--surface); border-radius: 8px; padding: 10px; box-shadow: 0 1px 1px rgba(9,30,66,.2); cursor: grab; text-decoration: none; color: var(--text); display: block; }
@@ -309,4 +309,8 @@ ol.notas { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
   .perfil-layout.con-lateral { display: block; }
   .lateral, .solo-escritorio { display: none !important; }
 }
-.linea-destino { height: 3px; border-radius: 2px; background: var(--brand); margin: -2px 2px; }
+.linea-destino {
+  height: 46px; border-radius: 8px; border: 2px dashed var(--brand); background: var(--brand-wash);
+  display: grid; place-items: center; color: var(--brand); font-size: 0.8rem; font-weight: 650; flex: none;
+  box-shadow: inset 4px 0 0 var(--brand);
+}
