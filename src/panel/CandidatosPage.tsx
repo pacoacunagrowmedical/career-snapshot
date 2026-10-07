@@ -107,7 +107,7 @@ export function CandidatosPage() {
       </div>
 
       {vista === 'tablero' && candidatos.length > 0 ? (
-        <Tablero filas={filas} etiquetas={etiquetas} consulta={f.consulta} onMover={(c, destino, orden) => mover([c], destino, orden)} />
+        <Tablero s={s} filas={filas} etiquetas={etiquetas} consulta={f.consulta} onMover={(c, destino, orden) => mover([c], destino, orden)} />
       ) : !filas.length ? (
         <div className="tabla-wrap vacio">{candidatos.length ? 'Ningún candidato coincide con los filtros.' : 'Aún no hay solicitudes. Comparte la liga del formulario para empezar a recibirlas.'}</div>
       ) : (

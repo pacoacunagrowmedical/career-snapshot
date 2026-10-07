@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { Analisis } from '../lib/analisis'
 import type { Candidato, Etiqueta } from '../types'
@@ -6,12 +6,15 @@ import { ETAPAS } from '../lib/catalogos'
 import { fechaCorta } from '../lib/fechas'
 import { ListaEtiquetas } from './Etiquetas'
 import { ordenDe } from './seguimiento'
+import type { Store } from '../data/store'
+import { VistaPreviaNotas } from './VistaPreviaNotas'
 
 /**
  * Vista tipo Trello: una columna por etapa. Las tarjetas se arrastran entre columnas para cambiar de etapa y
  * dentro de una columna para acomodarlas en el orden que se quiera (el orden se guarda en la base de datos).
  */
 export function Tablero(props: {
+  s: Store
   filas: { c: Candidato; a: Analisis }[]
   etiquetas: Etiqueta[]
   consulta: string // filtros activos, para que el perfil muestre la misma selección
@@ -20,6 +23,18 @@ export function Tablero(props: {
   const [arrastrando, setArrastrando] = useState<string | null>(null)
   // Dónde caería la tarjeta: columna e índice dentro de ella.
   const [destino, setDestino] = useState<{ etapa: string; indice: number } | null>(null)
+  // Vista previa de notas al dejar el cursor sobre una tarjeta con notas.
+  const [vista, setVista] = useState<{ c: Candidato; ancla: DOMRect } | null>(null)
+  const timer = useRef<number | undefined>(undefined)
+  const mostrarNotas = (c: Candidato, el: HTMLElement) => {
+    window.clearTimeout(timer.current)
+    if (!c.numNotas || arrastrando) return
+    timer.current = window.setTimeout(() => setVista({ c, ancla: el.getBoundingClientRect() }), 300)
+  }
+  const ocultarNotas = () => {
+    window.clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => setVista(null), 180) // margen para pasar el cursor al recuadro y dar clic en un link
+  }
 
   const columnas = ETAPAS.map((et) => ({
     et,
@@ -88,9 +103,13 @@ export function Tablero(props: {
                   {destino?.etapa === et.id && destino.indice === i && linea}
                   <Link
                     to={`/panel/candidato/${c.id}${props.consulta}`}
-                    className={`tarjeta${arrastrando === c.id ? ' arrastrando' : ''}`}
+                    className={`tarjeta${arrastrando === c.id ? ' arrastrando' : ''}${c.numNotas > 0 ? ' con-notas' : ''}`}
+                    onMouseEnter={(e) => mostrarNotas(c, e.currentTarget)}
+                    onMouseLeave={ocultarNotas}
                     draggable
                     onDragStart={(e) => {
+                      window.clearTimeout(timer.current)
+                      setVista(null)
                       e.dataTransfer.effectAllowed = 'move'
                       e.dataTransfer.setData('text/plain', c.id)
                       setArrastrando(c.id)
@@ -125,6 +144,16 @@ export function Tablero(props: {
           </div>
         </section>
       ))}
+      {vista && !arrastrando && (
+        <VistaPreviaNotas
+          s={props.s}
+          c={vista.c}
+          ancla={vista.ancla}
+          enlace={`/panel/candidato/${vista.c.id}${props.consulta}`}
+          onEntrar={() => window.clearTimeout(timer.current)}
+          onSalir={ocultarNotas}
+        />
+      )}
     </div>
   )
 }

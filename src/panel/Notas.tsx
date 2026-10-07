@@ -2,11 +2,17 @@ import { useEffect, useState } from 'react'
 import type { Store } from '../data/store'
 import type { Nota } from '../types'
 import { TextoConEnlaces } from '../lib/enlaces'
+import { olvidarNotas } from './VistaPreviaNotas'
 
 const fechaHora = (d: Date) =>
   d.toLocaleString('es-MX', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
-export function Notas({ s, candidatoId, recargar }: { s: Store; candidatoId: string; recargar: number }) {
+export function Notas({ s, candidatoId, recargar, onCambioNumero }: {
+  s: Store
+  candidatoId: string
+  recargar: number
+  onCambioNumero?: (delta: number) => void // para que el contador 💬 del tablero y la lista se actualice al instante
+}) {
   const [notas, setNotas] = useState<Nota[] | null>(null)
   const [texto, setTexto] = useState('')
   const [guardando, setGuardando] = useState(false)
@@ -14,7 +20,10 @@ export function Notas({ s, candidatoId, recargar }: { s: Store; candidatoId: str
   const [error, setError] = useState('')
   const yo = s.usuarioActual()?.email
 
-  const cargar = () => s.notas(candidatoId).then(setNotas).catch((e: Error) => setError(e.message))
+  const cargar = () => {
+    olvidarNotas(candidatoId)
+    return s.notas(candidatoId).then(setNotas).catch((e: Error) => setError(e.message))
+  }
   useEffect(() => {
     cargar()
   }, [s, candidatoId, recargar])
@@ -25,6 +34,7 @@ export function Notas({ s, candidatoId, recargar }: { s: Store; candidatoId: str
     setError('')
     try {
       await s.agregarNota(candidatoId, texto.trim())
+      onCambioNumero?.(1)
       setTexto('')
       await cargar()
     } catch (e) {
@@ -44,6 +54,7 @@ export function Notas({ s, candidatoId, recargar }: { s: Store; candidatoId: str
   const borrar = async (n: Nota) => {
     if (!confirm('¿Borrar esta nota?')) return
     await s.borrarNota(candidatoId, n.id)
+    onCambioNumero?.(-1)
     await cargar()
   }
 

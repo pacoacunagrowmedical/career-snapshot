@@ -239,7 +239,12 @@ export function PerfilPage() {
         </section>
       </div>
 
-      <Notas s={s} candidatoId={c.id} recargar={recargarNotas} />
+      <Notas
+        s={s}
+        candidatoId={c.id}
+        recargar={recargarNotas}
+        onCambioNumero={(d) => aplicar([c.id], (x) => ({ ...x, numNotas: Math.max(0, x.numNotas + d) }))}
+      />
 
       <section className="card respuestas" style={{ marginBottom: 20 }}>
         <h2>Respuestas por empleo</h2>

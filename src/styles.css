@@ -314,3 +314,16 @@ ol.notas { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
   display: grid; place-items: center; color: var(--brand); font-size: 0.8rem; font-weight: 650; flex: none;
   box-shadow: inset 4px 0 0 var(--brand);
 }
+
+/* ——— Notas visibles desde el tablero ——— */
+.tarjeta { position: relative; }
+.tarjeta.con-notas::after {
+  content: ''; position: absolute; top: 0; right: 0; width: 0; height: 0;
+  border-top: 12px solid var(--verde); border-left: 12px solid transparent; border-top-right-radius: 8px;
+}
+.vista-notas {
+  position: fixed; z-index: 60; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18); padding: 12px; max-height: 330px; overflow-y: auto; font-size: 0.85rem;
+}
+.vista-nota { border-left: 3px solid var(--verde); padding: 2px 0 2px 8px; }
+.vista-nota-texto { display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
